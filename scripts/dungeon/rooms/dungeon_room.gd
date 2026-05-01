@@ -8,6 +8,7 @@ extends Node2D
 # - instancia enemigos en puntos fijos si existen
 
 signal room_cleared
+signal exit_requested
 
 @export var room_size: Vector2 = Vector2(720, 420)
 @export var floor_color: Color = Color(0.18, 0.18, 0.20)
@@ -22,19 +23,31 @@ var player: Node2D = null
 var difficulty: int = 1
 var alive_enemies: int = 0
 
+var room_is_cleared: bool = false
 
 func setup_room(new_player: Node2D, new_difficulty: int) -> void:
 	# DungeonManager llama a este método cuando carga la sala.
 	player = new_player
 	difficulty = new_difficulty
+	room_is_cleared = false
+	alive_enemies = 0
+
+	setup_exit_door()
 
 	# Si esta sala no tiene enemy_scene asignada, no genera enemigos.
-	# Esto permite que StartRoom use el mismo script sin enemigos.
+	# Esto permite que StartRoom sea una sala segura.
 	if enemy_scene == null:
+		mark_room_as_cleared()
 		return
 
 	spawn_enemies()
 
+	# Si por lo que sea no hay puntos de spawn o no se generó ningún enemigo,
+	# consideramos la sala limpia para no bloquear al jugador.
+	if alive_enemies <= 0:
+		mark_room_as_cleared()
+	else:
+		lock_exit_door()
 
 func spawn_enemies() -> void:
 	# Buscamos un nodo llamado EnemySpawnPoints.
@@ -109,7 +122,7 @@ func _on_enemy_removed() -> void:
 
 	if alive_enemies <= 0:
 		print("Sala limpiada: ", name)
-		room_cleared.emit()
+		mark_room_as_cleared()
 
 func _draw() -> void:
 	# Dibujamos el suelo de la sala centrado en el origen del nodo.
@@ -120,3 +133,59 @@ func _draw() -> void:
 
 	draw_rect(rect, floor_color, true)
 	draw_rect(rect, border_color, false, 4.0)
+	
+	
+func setup_exit_door() -> void:
+	# Busca una puerta llamada ExitDoor dentro de la sala.
+	var exit_door := get_node_or_null("ExitDoor")
+
+	if exit_door == null:
+		return
+
+	# Conectamos la señal de la puerta.
+	# Usamos Callable para evitar conexiones duplicadas.
+	var callback := Callable(self, "_on_exit_door_requested")
+
+	if exit_door.has_signal("exit_requested"):
+		if not exit_door.exit_requested.is_connected(callback):
+			exit_door.exit_requested.connect(callback)
+
+
+func lock_exit_door() -> void:
+	var exit_door := get_node_or_null("ExitDoor")
+
+	if exit_door == null:
+		return
+
+	if exit_door.has_method("lock"):
+		exit_door.lock()
+
+
+func unlock_exit_door() -> void:
+	var exit_door := get_node_or_null("ExitDoor")
+
+	if exit_door == null:
+		return
+
+	if exit_door.has_method("unlock"):
+		exit_door.unlock()
+
+
+func mark_room_as_cleared() -> void:
+	# La sala queda marcada como limpia.
+	# Esto desbloquea la puerta y avisa al DungeonManager.
+
+	if room_is_cleared:
+		return
+
+	room_is_cleared = true
+	unlock_exit_door()
+	room_cleared.emit()
+
+
+func _on_exit_door_requested() -> void:
+	# La puerta solo debería funcionar si la sala ya está limpia.
+	if not room_is_cleared:
+		return
+
+	exit_requested.emit()

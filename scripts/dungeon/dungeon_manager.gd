@@ -71,17 +71,21 @@ func load_current_room() -> void:
 	# No estamos haciendo un mapa físico conectado todavía.
 	current_room.global_position = Vector2.ZERO
 
-	# Movemos al jugador al punto de aparición de esta sala.
-	move_player_to_room_spawn(current_room)
-	
-	# Configuramos la sala.
-	# Aquí la sala puede generar enemigos, preparar puertas, loot, etc.
-	if current_room.has_method("setup_room"):
-		current_room.setup_room(player, 1)
-
-	# Escuchamos cuándo la sala queda limpia.
+	# Conectamos señales de la sala antes de configurarla.
+	# Así no perdemos señales si StartRoom se marca como limpia durante setup_room().
 	if current_room.has_signal("room_cleared"):
 		current_room.room_cleared.connect(_on_current_room_cleared)
+
+	if current_room.has_signal("exit_requested"):
+		current_room.exit_requested.connect(_on_current_room_exit_requested)
+
+	# Movemos al jugador al punto de aparición de esta sala.
+	move_player_to_room_spawn(current_room)
+
+	# Configuramos la sala.
+	# Aquí puede generar enemigos, bloquear/desbloquear puerta, etc.
+	if current_room.has_method("setup_room"):
+		current_room.setup_room(player, 1)
 
 func go_to_next_room() -> void:
 	# Avanza a la siguiente sala de la secuencia.
@@ -128,11 +132,11 @@ func clear_rooms() -> void:
 	
 func _on_current_room_cleared() -> void:
 	# La sala actual ha sido limpiada.
-	# De momento avanzamos automáticamente a la siguiente sala.
-	# Más adelante aquí abriremos una puerta o mostraremos loot.
+	# Ya no avanzamos automáticamente.
+	# Ahora la puerta se desbloquea y el jugador decide cuándo salir.
 
 	print("DungeonManager ha recibido room_cleared de la sala actual.")
 
-	await get_tree().create_timer(0.6).timeout
-
+func _on_current_room_exit_requested() -> void:
+	# El jugador ha entrado en la puerta de salida de una sala limpia.
 	go_to_next_room()

@@ -1,8 +1,18 @@
 [gd_scene format=3 uid="uid://f1qwwm0v8ok8"]
 
 [ext_resource type="Script" uid="uid://vfl2byp8j7t5" path="res://scripts/dungeon/rooms/dungeon_room.gd" id="1_vwi7l"]
+[ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="2_421mm"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vwi7l"]
 
 [node name="StartRoom" type="Node2D" unique_id=1880824940]
 script = ExtResource("1_vwi7l")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1521212431]
+
+[node name="ExitDoor" type="Area2D" parent="." unique_id=242948260]
+position = Vector2(0, -190)
+script = ExtResource("2_421mm")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitDoor" unique_id=1423328170]
+shape = SubResource("RectangleShape2D_vwi7l")

@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" uid="uid://vfl2byp8j7t5" path="res://scripts/dungeon/rooms/dungeon_room.gd" id="1_0ah8e"]
 [ext_resource type="PackedScene" uid="uid://d33x6vbucvpe5" path="res://scenes/enemies/enemy.tscn" id="2_fnekb"]
+[ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="3_fnekb"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_fnekb"]
 
 [node name="CombatRoom" type="Node2D" unique_id=573488946]
 script = ExtResource("1_0ah8e")
@@ -9,6 +12,13 @@ enemy_scene = ExtResource("2_fnekb")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1688751154]
 position = Vector2(0, 120)
+
+[node name="ExitDoor" type="Area2D" parent="." unique_id=547108838]
+position = Vector2(0, -190)
+script = ExtResource("3_fnekb")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitDoor" unique_id=1769014230]
+shape = SubResource("RectangleShape2D_fnekb")
 
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=2076010589]
 

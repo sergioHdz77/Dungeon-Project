@@ -21,6 +21,11 @@ signal player_died
 @export var map_half_size: Vector2 = Vector2(1200, 800)
 
 func _ready() -> void:
+	
+	# Marcamos este nodo como jugador para que puertas y otros sistemas
+	# puedan detectarlo sin depender solo del nombre del nodo.
+	add_to_group("player")
+	
 	# Conectamos señales internas de los componentes.
 	economy.economy_changed.connect(_on_economy_changed)
 	progression.progression_changed.connect(_on_progression_changed)
