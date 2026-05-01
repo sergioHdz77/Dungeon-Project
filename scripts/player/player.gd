@@ -172,15 +172,24 @@ func register_kill() -> void:
 	progression.register_kill()
 
 func take_damage(amount: float) -> void:
-	progression.take_damage(amount)
+	# El daño pasa primero por Combat porque Combat sabe
+	# si el jugador está bloqueando o no.
+
+	var final_damage: float = amount
+
+	if combat != null:
+		if combat.has_method("get_modified_incoming_damage"):
+			final_damage = combat.get_modified_incoming_damage(amount)
+
+	progression.take_damage(final_damage)
 
 func die() -> void:
 	progression.die()
 
 func _draw() -> void:
-	# Dibujo provisional del jugador y barras locales.
 	draw_aura()
 	draw_melee_attack_debug()
+	draw_block_debug()
 	draw_player_body()
 	draw_health_bar()
 	draw_xp_bar()
@@ -239,6 +248,35 @@ func draw_melee_attack_debug() -> void:
 		right_dir * radius,
 		Color(1.0, 0.9, 0.35, 0.55),
 		2.0
+	)
+
+func draw_block_debug() -> void:
+	# Dibujo provisional para ver cuándo el jugador está bloqueando.
+	# Más adelante será una animación o sprite de escudo.
+
+	if combat == null:
+		return
+
+	if not combat.is_blocking:
+		return
+
+	var block_direction: Vector2 = combat.facing_direction.normalized()
+	var block_center: Vector2 = block_direction * 22.0
+
+	draw_circle(
+		block_center,
+		14.0,
+		Color(0.25, 0.55, 1.0, 0.45)
+	)
+
+	draw_arc(
+		block_center,
+		14.0,
+		0.0,
+		TAU,
+		24,
+		Color(0.45, 0.75, 1.0, 0.95),
+		3.0
 	)
 
 func draw_player_body() -> void:

@@ -40,6 +40,10 @@ extends Node
 # Tiempo que se verá el arco del ataque.
 @export var attack_debug_duration: float = 0.12
 
+# Multiplicador de daño recibido mientras bloquea.
+# 0.35 significa que recibe solo el 35% del daño.
+@export var block_damage_multiplier: float = 0.35
+
 # Temporizador visual del ataque.
 var attack_debug_timer: float = 0.0
 
@@ -55,6 +59,10 @@ var facing_direction: Vector2 = Vector2.RIGHT
 
 # Referencia al Player.
 var player: Node2D = null
+
+# Indica si el jugador está bloqueando ahora mismo.
+var is_blocking: bool = false
+
 
 
 func _ready() -> void:
@@ -74,13 +82,19 @@ func process_combat(delta: float) -> void:
 	if attack_debug_timer > 0.0:
 		attack_debug_timer -= delta
 
-	# Actualizamos dirección de ataque según movimiento.
+	# Actualizamos dirección de ataque/bloqueo según movimiento.
 	update_facing_direction()
+
+	# Actualizamos si el jugador está bloqueando.
+	update_block_state()
+
+	# Si está bloqueando, no puede atacar.
+	if is_blocking:
+		return
 
 	# Ataque manual.
 	if Input.is_action_just_pressed("attack"):
 		try_melee_attack()
-
 
 func update_facing_direction() -> void:
 	# Usamos los mismos inputs de movimiento que el Player.
@@ -141,6 +155,20 @@ func is_enemy_inside_melee_arc(enemy: Node2D) -> bool:
 
 	# Cono frontal.
 	return angle_degrees <= melee_arc_degrees / 2.0
+	
+func update_block_state() -> void:
+	# El bloqueo se mantiene mientras el jugador pulse la acción block.
+	is_blocking = Input.is_action_pressed("block")
+	
+func get_modified_incoming_damage(amount: float) -> float:
+	# Permite que Player pregunte cuánto daño debe recibir realmente.
+	# Si está bloqueando, reducimos el daño.
+	# Si no está bloqueando, entra completo.
+
+	if is_blocking:
+		return amount * block_damage_multiplier
+
+	return amount
 
 
 # Métodos antiguos conservados para no romper llamadas existentes.

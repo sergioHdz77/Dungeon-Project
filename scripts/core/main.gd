@@ -217,14 +217,3 @@ func update_hud() -> void:
 			0,
 			0
 		)
-
-func _unhandled_input(event: InputEvent) -> void:
-	# Tecla temporal de debug para probar cambio de sala.
-	# Más adelante esto se sustituirá por puertas o por limpiar enemigos.
-	if not run_active:
-		return
-
-	if event.is_action_pressed("debug_next_room"):
-		if dungeon_manager != null:
-			if dungeon_manager.has_method("go_to_next_room"):
-				dungeon_manager.go_to_next_room()
