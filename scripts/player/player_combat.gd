@@ -44,6 +44,10 @@ extends Node
 # 0.35 significa que recibe solo el 35% del daño.
 @export var block_damage_multiplier: float = 0.35
 
+# Multiplicador de velocidad mientras bloquea.
+# 0.45 significa que se mueve al 45% de su velocidad normal.
+@export var block_movement_multiplier: float = 0.45
+
 # Temporizador visual del ataque.
 var attack_debug_timer: float = 0.0
 
@@ -170,6 +174,16 @@ func get_modified_incoming_damage(amount: float) -> float:
 
 	return amount
 
+func get_movement_speed_multiplier() -> float:
+	# Permite que Player pregunte si debe moverse más lento.
+	# De momento solo afecta el bloqueo.
+	# Más adelante aquí también podrían entrar peso de armadura,
+	# ralentizaciones, buffs, etc.
+
+	if is_blocking:
+		return block_movement_multiplier
+
+	return 1.0
 
 # Métodos antiguos conservados para no romper llamadas existentes.
 # Luego limpiaremos Player.gd y el HUD.

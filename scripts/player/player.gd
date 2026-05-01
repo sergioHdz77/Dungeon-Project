@@ -57,14 +57,34 @@ func _physics_process(delta: float) -> void:
 
 func handle_movement() -> void:
 	# Lee input desde Input Map y mueve al jugador.
-	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	velocity = input_dir * speed
+	var input_dir: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+
+	# Velocidad final del jugador.
+	# Normalmente es speed, pero puede modificarse por bloqueo,
+	# equipo pesado, estados alterados, etc.
+	var final_speed: float = speed
+
+	if combat != null:
+		if combat.has_method("get_movement_speed_multiplier"):
+			final_speed *= combat.get_movement_speed_multiplier()
+
+	velocity = input_dir * final_speed
 	move_and_slide()
 	
 	# Evita que el jugador salga del mapa.
-	var player_radius := 12.0
-	global_position.x = clamp(global_position.x, -map_half_size.x + player_radius, map_half_size.x - player_radius)
-	global_position.y = clamp(global_position.y, -map_half_size.y + player_radius, map_half_size.y - player_radius)
+	var player_radius: float = 12.0
+
+	global_position.x = clamp(
+		global_position.x,
+		-map_half_size.x + player_radius,
+		map_half_size.x - player_radius
+	)
+
+	global_position.y = clamp(
+		global_position.y,
+		-map_half_size.y + player_radius,
+		map_half_size.y - player_radius
+	)
 
 func _on_economy_changed() -> void:
 	# La economía cambió, así que el HUD debe actualizarse.
