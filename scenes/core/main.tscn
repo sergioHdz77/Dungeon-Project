@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://c0ywgwmhc3p7k" path="res://scripts/player/player.gd" id="4_jpx65"]
 [ext_resource type="PackedScene" uid="uid://f1qwwm0v8ok8" path="res://scenes/dungeon/rooms/start_room.tscn" id="4_ocd3q"]
 [ext_resource type="PackedScene" uid="uid://dkf454cjx2t0y" path="res://scenes/dungeon/rooms/combat_room.tscn" id="5_5xrq8"]
+[ext_resource type="PackedScene" uid="uid://ejdtkrqwu7x0" path="res://scenes/dungeon/rooms/boss_room.tscn" id="6_kbh5f"]
 [ext_resource type="Script" uid="uid://ksnrxbhmeloi" path="res://scripts/ui/hud_ui.gd" id="7_44pk5"]
 [ext_resource type="Script" uid="uid://coevxxvue8878" path="res://scripts/ui/start_screen.gd" id="8_phv0v"]
 [ext_resource type="Script" uid="uid://bumiy18calt12" path="res://scripts/ui/run_end_screen.gd" id="10_fu2j5"]
@@ -25,6 +26,7 @@ room_container = NodePath("../RoomContainer")
 player = NodePath("../Player")
 start_room_scene = ExtResource("4_ocd3q")
 combat_room_scene = ExtResource("5_5xrq8")
+boss_room_scene = ExtResource("6_kbh5f")
 
 [node name="RoomContainer" type="Node2D" parent="." unique_id=2099461507]
 

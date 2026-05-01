@@ -17,6 +17,7 @@ signal dungeon_completed
 
 @export var start_room_scene: PackedScene
 @export var combat_room_scene: PackedScene
+@export var boss_room_scene: PackedScene
 
 var current_room: Node2D = null
 var current_room_index: int = 0
@@ -33,7 +34,8 @@ func create_test_dungeon() -> void:
 	room_sequence = [
 		start_room_scene,
 		combat_room_scene,
-		combat_room_scene
+		combat_room_scene,
+		boss_room_scene
 	]
 
 	current_room_index = 0
