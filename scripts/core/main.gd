@@ -24,7 +24,7 @@ extends Node2D
 
 var run_active: bool = false
 
-var run_loot: Array[String] = []
+var run_loot: Array[Dictionary] = []
 
 func _ready() -> void:
 	# Inicializa la semilla aleatoria.
@@ -136,10 +136,27 @@ func _on_dungeon_completed() -> void:
 
 func finish_run(victory: bool) -> void:
 	# Cierra la run actual.
-	# De momento NO guardamos loot ni inventario.
-	# Solo mostramos la pantalla final con el resultado de la mazmorra.
+	#
+	# Si ganas:
+	# - el loot de run pasa al inventario persistente.
+	#
+	# Si mueres:
+	# - el loot de run se pierde.
+	#
+	# Todavía NO gestionamos equipo perdido al morir.
+	# Eso vendrá cuando exista PlayerEquipment.
 
 	run_active = false
+
+	if victory:
+		# Guardamos el loot conseguido durante la run.
+		# Este es el primer paso real de inventario persistente.
+		if not run_loot.is_empty():
+			SaveManager.add_inventory_items(run_loot)
+
+			print("Inventario persistente actual:")
+			print(SaveManager.get_inventory_text())
+
 	update_hud()
 
 	if run_end_screen != null:
@@ -183,15 +200,19 @@ func finish_run(victory: bool) -> void:
 				else:
 					result_text = "Mazmorra completada.\nLoot conseguido:\n"
 
-				for item_name in run_loot:
-					result_text += "- %s\n" % item_name
+					for item_data: Dictionary in run_loot:
+						var item_name: String = str(item_data.get("name", "Objeto desconocido"))
+						result_text += "- %s\n" % item_name
+
+					result_text += "\nGuardado en inventario persistente."
 			else:
 				result_text = "Has muerto en la mazmorra.\nLoot perdido:\n"
 
 				if run_loot.is_empty():
 					result_text += "- Ninguno"
 				else:
-					for item_name in run_loot:
+					for item_data: Dictionary in run_loot:
+						var item_name: String = str(item_data.get("name", "Objeto desconocido"))
 						result_text += "- %s\n" % item_name
 
 			run_end_screen.show_screen(
@@ -234,10 +255,17 @@ func update_hud() -> void:
 			0
 		)
 		
-func _on_item_collected(_item_id: String, display_name: String) -> void:
+func _on_item_collected(item_id: String, display_name: String) -> void:
 	# Guardamos el loot conseguido durante esta run.
-	# Todavía NO es inventario persistente.
-	# Solo se usa para mostrarlo al final.
+	# Guardamos id + nombre:
+	# - id: sirve para inventario/equipamiento real
+	# - name: sirve para mostrar texto al jugador
 
-	run_loot.append(display_name)
-	print("Loot de run añadido: ", display_name)
+	var item_data := {
+		"id": item_id,
+		"name": display_name
+	}
+
+	run_loot.append(item_data)
+
+	print("Loot de run añadido: ", display_name, " | id: ", item_id)
