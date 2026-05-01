@@ -48,6 +48,27 @@ extends Node
 # 0.45 significa que se mueve al 45% de su velocidad normal.
 @export var block_movement_multiplier: float = 0.45
 
+# Stamina máxima del jugador.
+@export var max_stamina: float = 100.0
+
+# Stamina actual.
+var stamina: float = 100.0
+
+# Stamina que se consume por segundo mientras bloquea.
+@export var block_stamina_drain_per_second: float = 28.0
+
+# Stamina que se recupera por segundo cuando no bloquea.
+@export var stamina_regen_per_second: float = 22.0
+
+# Tiempo que tarda en empezar a regenerar tras dejar de bloquear.
+@export var stamina_regen_delay: float = 0.45
+
+# Stamina mínima necesaria para empezar a bloquear.
+@export var minimum_stamina_to_block: float = 8.0
+
+# Temporizador interno para retrasar la regeneración.
+var stamina_regen_timer: float = 0.0
+
 # Temporizador visual del ataque.
 var attack_debug_timer: float = 0.0
 
@@ -72,13 +93,15 @@ var is_blocking: bool = false
 func _ready() -> void:
 	player = get_parent() as Node2D
 	attack_range = melee_range
-
+	
+	# Inicializamos la stamina al máximo.
+	stamina = max_stamina
 
 func process_combat(delta: float) -> void:
 	if player == null:
 		return
 
-	# Reducimos cooldown.
+	# Reducimos cooldown de ataque.
 	if attack_timer > 0.0:
 		attack_timer -= delta
 
@@ -89,8 +112,8 @@ func process_combat(delta: float) -> void:
 	# Actualizamos dirección de ataque/bloqueo según movimiento.
 	update_facing_direction()
 
-	# Actualizamos si el jugador está bloqueando.
-	update_block_state()
+	# Actualizamos bloqueo y stamina.
+	update_block_state(delta)
 
 	# Si está bloqueando, no puede atacar.
 	if is_blocking:
@@ -160,9 +183,37 @@ func is_enemy_inside_melee_arc(enemy: Node2D) -> bool:
 	# Cono frontal.
 	return angle_degrees <= melee_arc_degrees / 2.0
 	
-func update_block_state() -> void:
-	# El bloqueo se mantiene mientras el jugador pulse la acción block.
-	is_blocking = Input.is_action_pressed("block")
+func update_block_state(delta: float) -> void:
+	var wants_to_block: bool = Input.is_action_pressed("block")
+
+	if wants_to_block and stamina >= minimum_stamina_to_block:
+		is_blocking = true
+
+		# Consumimos stamina mientras bloquea.
+		stamina -= block_stamina_drain_per_second * delta
+		stamina = maxf(stamina, 0.0)
+
+		# Al bloquear, retrasamos la regeneración.
+		stamina_regen_timer = stamina_regen_delay
+
+		# Si se queda sin stamina, deja de bloquear.
+		if stamina <= 0.0:
+			is_blocking = false
+
+		return
+
+	# Si no quiere bloquear o no tiene stamina suficiente, no bloquea.
+	is_blocking = false
+
+	# Reducimos el delay de regeneración.
+	if stamina_regen_timer > 0.0:
+		stamina_regen_timer -= delta
+		return
+
+	# Regeneramos stamina.
+	if stamina < max_stamina:
+		stamina += stamina_regen_per_second * delta
+		stamina = minf(stamina, max_stamina)
 	
 func get_modified_incoming_damage(amount: float) -> float:
 	# Permite que Player pregunte cuánto daño debe recibir realmente.
@@ -214,3 +265,17 @@ func multiply_range(multiplier: float) -> void:
 func upgrade_aura() -> void:
 	# El aura survivor-like queda desactivada.
 	pass
+
+func get_stamina() -> float:
+	return stamina
+
+
+func get_max_stamina() -> float:
+	return max_stamina
+
+
+func get_stamina_ratio() -> float:
+	if max_stamina <= 0.0:
+		return 0.0
+
+	return stamina / max_stamina

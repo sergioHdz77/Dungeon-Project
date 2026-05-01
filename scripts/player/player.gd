@@ -212,6 +212,7 @@ func _draw() -> void:
 	draw_block_debug()
 	draw_player_body()
 	draw_health_bar()
+	draw_stamina_bar()
 	draw_xp_bar()
 
 func draw_aura() -> void:
@@ -322,7 +323,32 @@ func draw_health_bar() -> void:
 		Rect2(bar_position, Vector2(bar_width * health_ratio, bar_height)),
 		Color(0.2, 0.9, 0.3)
 	)
+	
+func draw_stamina_bar() -> void:
+	# Barra local de stamina debajo de la vida.
+	# Es provisional hasta adaptar el HUD.
 
+	if combat == null:
+		return
+
+	if not combat.has_method("get_stamina_ratio"):
+		return
+
+	var bar_width: float = 44.0
+	var bar_height: float = 4.0
+	var bar_position: Vector2 = Vector2(-bar_width / 2.0, -18.0)
+	var stamina_ratio: float = combat.get_stamina_ratio()
+
+	draw_rect(
+		Rect2(bar_position, Vector2(bar_width, bar_height)),
+		Color(0.10, 0.10, 0.10)
+	)
+
+	draw_rect(
+		Rect2(bar_position, Vector2(bar_width * stamina_ratio, bar_height)),
+		Color(0.35, 0.75, 1.0)
+	)
+	
 func draw_xp_bar() -> void:
 	# Barra de XP local encima del jugador.
 	var bar_width := 44.0
