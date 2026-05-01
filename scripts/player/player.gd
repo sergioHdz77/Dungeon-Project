@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+const ItemDatabase = preload("res://scripts/data/item_database.gd")
+
 # Señales públicas del jugador.
 # Main escucha estas señales, no los componentes internos.
 signal level_up_requested(new_level: int)
@@ -15,6 +17,11 @@ signal player_died
 
 # Velocidad de movimiento del jugador.
 @export var speed: float = 220.0
+
+# Equipo provisional.
+# De momento solo soportamos arma.
+var equipped_weapon_id: String = ""
+var equipped_weapon_name: String = "Sin arma"
 
 # Mitad del tamaño del mapa.
 # Se usa para impedir que el jugador salga fuera del rectángulo.
@@ -419,3 +426,39 @@ func get_aura_level() -> int:
 
 func get_aura_damage_per_second() -> float:
 	return combat.aura_damage_per_second
+	
+func equip_weapon(item_id: String) -> void:
+	# Equipa un arma usando ItemDatabase.
+	# De momento solo aplica bonus de daño.
+	# Más adelante habrá PlayerEquipment separado.
+
+	if item_id.is_empty():
+		return
+
+	var item_data: Dictionary = ItemDatabase.get_item(item_id)
+
+	if item_data.is_empty():
+		push_warning("No existe item en ItemDatabase: %s" % item_id)
+		return
+
+	var item_type: String = str(item_data.get("type", ""))
+
+	if item_type != "weapon":
+		push_warning("El item no es un arma: %s" % item_id)
+		return
+
+	equipped_weapon_id = item_id
+	equipped_weapon_name = str(item_data.get("name", "Arma desconocida"))
+
+	var damage_bonus: float = float(item_data.get("attack_damage_bonus", 0.0))
+
+	if combat != null:
+		combat.add_damage(damage_bonus)
+
+	print("Arma equipada: ", equipped_weapon_name, " | daño bonus: ", damage_bonus)
+
+	stats_changed.emit()
+	queue_redraw()
+
+func get_equipped_weapon_name() -> String:
+	return equipped_weapon_name

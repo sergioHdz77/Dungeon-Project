@@ -1,5 +1,7 @@
 extends Node2D
 
+const ItemDatabase = preload("res://scripts/data/item_database.gd")
+
 # Main sigue siendo el coordinador principal,
 # pero esta versión ya NO coordina el survivor-like antiguo.
 #
@@ -65,27 +67,29 @@ func _ready() -> void:
 
 func show_start_screen() -> void:
 	# Mostramos el menú inicial.
-	# Usamos la pantalla que ya tienes, aunque todavía tenga textos antiguos.
-	# Más adelante la convertiremos en menú principal con equipamiento.
+	# Todavía usamos StartScreen antiguo, pero el texto ya muestra
+	# el inventario persistente del nuevo sistema roguelite.
 
 	if start_screen != null:
 		if start_screen.has_method("show_screen"):
-			# La firma antigua esperaba:
-			# duración, ahorros meta, texto de desbloqueos.
-			#
-			# Como ya no usamos temporizador ni ahorro de piso,
-			# le pasamos valores neutros.
+			var inventory_text: String = SaveManager.get_inventory_text()
+
+			var menu_text := ""
+			menu_text += "Nuevo modo: mazmorra roguelite.\n\n"
+			menu_text += "Inventario persistente:\n"
+			menu_text += inventory_text
+			menu_text += "\nSistema de equipamiento pendiente."
+
 			start_screen.show_screen(
 				0,
 				0,
-				"Nuevo modo: mazmorra roguelite.\nSistema de equipamiento pendiente."
+				menu_text
 			)
 		else:
 			start_screen.visible = true
 
 	# El juego queda pausado mientras estamos en el menú.
 	get_tree().paused = true
-
 
 func _on_start_button_pressed() -> void:
 	# El jugador pulsa empezar.
@@ -99,7 +103,15 @@ func _on_start_button_pressed() -> void:
 	# Activamos la partida.
 	get_tree().paused = false
 	run_active = true
-
+	
+	# Limpiamos el loot temporal de la run anterior.
+	# El inventario persistente ya está en SaveManager.
+	run_loot.clear()
+	
+	# Equipamos automáticamente la primera arma disponible.
+	# Esto es provisional hasta tener pantalla de equipamiento.
+	equip_first_weapon_from_inventory()
+	
 	# Creamos la primera sala de la mazmorra.
 	# De momento solo existe una sala inicial estática.
 	if dungeon_manager != null:
@@ -269,3 +281,26 @@ func _on_item_collected(item_id: String, display_name: String) -> void:
 	run_loot.append(item_data)
 
 	print("Loot de run añadido: ", display_name, " | id: ", item_id)
+	
+func equip_first_weapon_from_inventory() -> void:
+	# Equipamiento automático provisional.
+	# Busca la primera arma del inventario persistente y se la equipa al jugador.
+	# Más adelante esto lo hará una pantalla de equipamiento real.
+
+	if player == null:
+		return
+
+	if not player.has_method("equip_weapon"):
+		return
+
+	for item_data: Dictionary in SaveManager.persistent_inventory:
+		var item_id: String = str(item_data.get("id", ""))
+
+		if item_id.is_empty():
+			continue
+
+		if ItemDatabase.is_weapon(item_id):
+			player.equip_weapon(item_id)
+			return
+
+	print("No hay armas en el inventario persistente para equipar.")
