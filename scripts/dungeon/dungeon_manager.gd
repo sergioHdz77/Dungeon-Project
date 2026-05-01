@@ -74,6 +74,10 @@ func load_current_room() -> void:
 	if current_room.has_method("setup_room"):
 		current_room.setup_room(player, 1)
 
+	# Escuchamos cuándo la sala queda limpia.
+	if current_room.has_signal("room_cleared"):
+		current_room.room_cleared.connect(_on_current_room_cleared)
+
 func go_to_next_room() -> void:
 	# Avanza a la siguiente sala de la secuencia.
 
@@ -117,3 +121,10 @@ func clear_rooms() -> void:
 		child.queue_free()
 
 	current_room = null
+	
+func _on_current_room_cleared() -> void:
+	# De momento solo imprimimos.
+	# En el siguiente paso decidiremos si se abre una puerta,
+	# si aparece una recompensa o si se avanza a la siguiente sala.
+
+	print("DungeonManager ha recibido room_cleared de la sala actual.")

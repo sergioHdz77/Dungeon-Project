@@ -20,11 +20,11 @@ extends Node
 @export var attack_cooldown: float = 0.45
 
 # Alcance del golpe cuerpo a cuerpo.
-@export var melee_range: float = 70.0
+@export var melee_range: float = 90.0
 
 # Anchura del golpe en grados.
 # 90 grados significa que golpea en un cono frontal amplio.
-@export var melee_arc_degrees: float = 90.0
+@export var melee_arc_degrees: float = 120.0
 
 # Mantengo attack_range para no romper HUD/getters antiguos.
 # Internamente lo usaremos como alias visual del melee_range.
@@ -116,28 +116,30 @@ func try_melee_attack() -> void:
 
 		if is_enemy_inside_melee_arc(enemy_2d):
 			if enemy_2d.has_method("take_damage"):
+				print("Golpeando enemigo: ", enemy_2d.name, " daño: ", attack_damage)
 				enemy_2d.call("take_damage", attack_damage)
 
 
 func is_enemy_inside_melee_arc(enemy: Node2D) -> bool:
 	var to_enemy: Vector2 = enemy.global_position - player.global_position
-	var distance := to_enemy.length()
+	var distance: float = to_enemy.length()
 
-	# Primero comprobamos distancia.
+	# Rango máximo del golpe.
 	if distance > melee_range:
 		return false
 
-	# Si el enemigo está justo encima, lo damos por válido.
-	if distance <= 0.01:
+	# Si el enemigo está muy pegado al jugador, permitimos el golpe.
+	# Esto evita la sensación rara de "lo tengo encima pero no le doy".
+	if distance <= 32.0:
 		return true
 
-	var direction_to_enemy := to_enemy.normalized()
+	var direction_to_enemy: Vector2 = to_enemy.normalized()
 
 	# Ángulo entre la dirección del jugador y la dirección al enemigo.
 	var angle: float = facing_direction.angle_to(direction_to_enemy)
 	var angle_degrees: float = absf(rad_to_deg(angle))
 
-	# Si entra dentro del cono frontal, recibe daño.
+	# Cono frontal.
 	return angle_degrees <= melee_arc_degrees / 2.0
 
 

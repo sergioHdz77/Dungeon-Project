@@ -34,6 +34,7 @@ func _physics_process(delta: float) -> void:
 "
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_v6fml"]
+radius = 4.3333335
 
 [node name="Player" type="CharacterBody2D" unique_id=1173866472]
 script = SubResource("GDScript_p0vlq")
@@ -54,3 +55,4 @@ script = ExtResource("3_4kuee")
 
 [node name="Progression" type="Node" parent="." unique_id=99627898]
 script = ExtResource("4_524rm")
+max_health = 9999.0

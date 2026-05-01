@@ -81,15 +81,19 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func take_damage(amount: float) -> void:
-	# Recibe daño de proyectiles o aura.
+	# Recibe daño del ataque melee.
 	health -= amount
-	
+
+	print(name, " recibe daño: ", amount, " | vida restante: ", health)
+
 	if health <= 0.0:
 		die()
 	else:
 		queue_redraw()
 
 func die() -> void:
+	print(name, " muere")
+
 	# Si el target sabe registrar kills, le avisamos.
 	# En este caso normalmente target será Player.
 	if target != null and target.has_method("register_kill"):

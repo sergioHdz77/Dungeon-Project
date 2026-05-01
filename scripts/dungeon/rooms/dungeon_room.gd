@@ -91,18 +91,23 @@ func spawn_enemy_at(spawn_position: Vector2) -> void:
 
 	alive_enemies += 1
 
-	# Si el enemigo tiene señal died, la conectamos.
-	# Si no la tiene, no pasa nada por ahora.
-	if enemy.has_signal("died"):
-		enemy.died.connect(_on_enemy_died)
+	# Detectamos cuándo el enemigo sale de la escena.
+	# Esto normalmente pasa cuando muere y hace queue_free().
+	# Así no dependemos todavía de que el enemigo tenga señal died.
+	enemy.tree_exited.connect(_on_enemy_removed)
 
 
-func _on_enemy_died() -> void:
+func _on_enemy_removed() -> void:
+	# Un enemigo de esta sala ha desaparecido.
+	# Normalmente significa que ha muerto.
+
 	alive_enemies -= 1
 
-	if alive_enemies <= 0:
-		room_cleared.emit()
+	print("Enemigo eliminado. Quedan: ", alive_enemies)
 
+	if alive_enemies <= 0:
+		print("Sala limpiada: ", name)
+		room_cleared.emit()
 
 func _draw() -> void:
 	# Dibujamos el suelo de la sala centrado en el origen del nodo.
