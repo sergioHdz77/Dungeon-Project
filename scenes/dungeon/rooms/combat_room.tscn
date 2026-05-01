@@ -20,3 +20,6 @@ position = Vector2(180, 0)
 
 [node name="EnemySpawnPoint3" type="Marker2D" parent="EnemySpawnPoints" unique_id=1732646614]
 position = Vector2(0, -160)
+
+[node name="Enemies" type="Node2D" parent="." unique_id=863592366]
+z_index = 10

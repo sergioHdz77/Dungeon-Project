@@ -38,6 +38,12 @@ func _ready() -> void:
 
 		if player.has_signal("player_died"):
 			player.player_died.connect(_on_player_died)
+			
+	# Señales del DungeonManager.
+	# Cuando la mazmorra termina, Main cierra la run como victoria.
+	if dungeon_manager != null:
+		if dungeon_manager.has_signal("dungeon_completed"):
+			dungeon_manager.dungeon_completed.connect(_on_dungeon_completed)
 
 	# Pantalla inicial.
 	if start_screen != null:
@@ -114,19 +120,27 @@ func _on_player_died() -> void:
 
 	finish_run(false)
 
+func _on_dungeon_completed() -> void:
+	# La mazmorra se ha completado.
+	# De momento esto significa victoria directa.
+	# Más adelante solo se llamará después de matar al boss.
+
+	if not run_active:
+		return
+
+	finish_run(true)
 
 func finish_run(victory: bool) -> void:
 	# Cierra la run actual.
-	# En esta primera migración NO guardamos ahorros,
-	# NO guardamos loot y NO tocamos inventario.
+	# De momento NO guardamos loot ni inventario.
+	# Solo mostramos la pantalla final con el resultado de la mazmorra.
 
 	run_active = false
 	update_hud()
 
 	if run_end_screen != null:
 		if run_end_screen.has_method("show_screen"):
-			# Mantenemos la firma antigua para no tener que rehacer
-			# RunEndScreen todavía.
+			# Mantenemos la firma antigua de RunEndScreen para no rehacer la UI todavía.
 			#
 			# Parámetros antiguos:
 			# victory,
@@ -157,6 +171,13 @@ func finish_run(victory: bool) -> void:
 				if player.has_method("get_total_coins_collected"):
 					coins_collected = player.get_total_coins_collected()
 
+			var result_text := ""
+
+			if victory:
+				result_text = "Mazmorra completada.\nLoot e inventario persistente pendientes."
+			else:
+				result_text = "Has muerto en la mazmorra.\nPérdida de equipo pendiente."
+
 			run_end_screen.show_screen(
 				victory,
 				0,
@@ -166,14 +187,13 @@ func finish_run(victory: bool) -> void:
 				coins_collected,
 				0,
 				0,
-				"Sistema antiguo de mejoras desactivado."
+				result_text
 			)
 		else:
 			run_end_screen.visible = true
 
 	# Pausamos en pantalla final.
 	get_tree().paused = true
-
 
 func _on_restart_button_pressed() -> void:
 	# Reinicia la escena actual.

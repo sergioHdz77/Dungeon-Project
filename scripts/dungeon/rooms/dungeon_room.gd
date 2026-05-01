@@ -60,21 +60,26 @@ func spawn_enemy_at(spawn_position: Vector2) -> void:
 	if enemy == null:
 		return
 
-	# Añadimos el enemigo a la escena principal, no dentro de la sala.
-	# Así se comporta igual que los enemigos anteriores.
-	get_tree().current_scene.add_child(enemy)
+	# Añadimos el enemigo dentro de la propia sala.
+	# Así, si la sala se borra, sus enemigos también desaparecen.
+	var enemies_container := get_node_or_null("Enemies") as Node2D
 
+	if enemies_container == null:
+		# Fallback por seguridad.
+		# Si la sala no tiene nodo Enemies, el enemigo se añade directamente a la sala.
+		enemies_container = self
+
+	enemies_container.add_child(enemy)
+
+	# Usamos global_position para que aparezca exactamente en el Marker2D.
 	enemy.global_position = spawn_position
 
 	# Lo metemos en el grupo enemies por si el enemigo antiguo no lo hacía.
-	# Esto nos servirá luego para combate, limpieza de sala y debug.
 	if not enemy.is_in_group("enemies"):
 		enemy.add_to_group("enemies")
 
-	# El enemigo anterior, por lo que enseñaste, usa setup así:
+	# El enemigo anterior usa setup así:
 	# setup(player, health_multiplier, speed_multiplier, damage_multiplier, reward_multiplier)
-	#
-	# Aprovechamos esa API para no reescribir Enemy todavía.
 	if enemy.has_method("setup"):
 		var health_multiplier := 1.0 + float(difficulty - 1) * 0.25
 		var speed_multiplier := 1.0 + float(difficulty - 1) * 0.10
@@ -92,10 +97,7 @@ func spawn_enemy_at(spawn_position: Vector2) -> void:
 	alive_enemies += 1
 
 	# Detectamos cuándo el enemigo sale de la escena.
-	# Esto normalmente pasa cuando muere y hace queue_free().
-	# Así no dependemos todavía de que el enemigo tenga señal died.
 	enemy.tree_exited.connect(_on_enemy_removed)
-
 
 func _on_enemy_removed() -> void:
 	# Un enemigo de esta sala ha desaparecido.

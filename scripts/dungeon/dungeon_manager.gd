@@ -1,5 +1,7 @@
 extends Node
 
+signal dungeon_completed
+
 # DungeonManager será el encargado de construir y cambiar salas.
 #
 # De momento NO hay generación procedural real.
@@ -30,6 +32,7 @@ func create_test_dungeon() -> void:
 
 	room_sequence = [
 		start_room_scene,
+		combat_room_scene,
 		combat_room_scene
 	]
 
@@ -87,14 +90,13 @@ func go_to_next_room() -> void:
 	current_room_index += 1
 
 	if current_room_index >= room_sequence.size():
-		# Todavía no hacemos victoria.
-		# De momento solo avisamos por consola.
-		print("No hay más salas. Más adelante aquí irá la victoria o boss.")
-		current_room_index = room_sequence.size() - 1
+		# Ya no quedan más salas.
+		# En este MVP provisional, eso significa victoria.
+		print("Mazmorra completada.")
+		dungeon_completed.emit()
 		return
 
 	load_current_room()
-
 
 func move_player_to_room_spawn(room: Node2D) -> void:
 	if player == null:
@@ -123,8 +125,12 @@ func clear_rooms() -> void:
 	current_room = null
 	
 func _on_current_room_cleared() -> void:
-	# De momento solo imprimimos.
-	# En el siguiente paso decidiremos si se abre una puerta,
-	# si aparece una recompensa o si se avanza a la siguiente sala.
+	# La sala actual ha sido limpiada.
+	# De momento avanzamos automáticamente a la siguiente sala.
+	# Más adelante aquí abriremos una puerta o mostraremos loot.
 
 	print("DungeonManager ha recibido room_cleared de la sala actual.")
+
+	await get_tree().create_timer(0.6).timeout
+
+	go_to_next_room()
