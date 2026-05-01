@@ -175,6 +175,7 @@ func die() -> void:
 func _draw() -> void:
 	# Dibujo provisional del jugador y barras locales.
 	draw_aura()
+	draw_melee_attack_debug()
 	draw_player_body()
 	draw_health_bar()
 	draw_xp_bar()
@@ -186,6 +187,54 @@ func draw_aura() -> void:
 	
 	draw_circle(Vector2.ZERO, combat.aura_radius, Color(0.55, 0.25, 1.0, 0.14))
 	draw_arc(Vector2.ZERO, combat.aura_radius, 0.0, TAU, 64, Color(0.7, 0.45, 1.0, 0.85), 2.0)
+	
+func draw_melee_attack_debug() -> void:
+	# Dibuja temporalmente el arco del ataque melee.
+	# Esto es solo debug visual. Más adelante lo cambiaremos por animación real.
+
+	if combat == null:
+		return
+
+	if combat.attack_debug_timer <= 0.0:
+		return
+
+	var attack_direction: Vector2 = combat.last_attack_direction.normalized()
+	var base_angle: float = attack_direction.angle()
+
+	var half_arc: float = deg_to_rad(combat.melee_arc_degrees / 2.0)
+	var start_angle: float = base_angle - half_arc
+	var end_angle: float = base_angle + half_arc
+
+	var radius: float = combat.melee_range
+
+	# Arco exterior del golpe.
+	draw_arc(
+		Vector2.ZERO,
+		radius,
+		start_angle,
+		end_angle,
+		24,
+		Color(1.0, 0.9, 0.35, 0.9),
+		4.0
+	)
+
+	# Dos líneas laterales del cono.
+	var left_dir: Vector2 = Vector2.RIGHT.rotated(start_angle)
+	var right_dir: Vector2 = Vector2.RIGHT.rotated(end_angle)
+
+	draw_line(
+		Vector2.ZERO,
+		left_dir * radius,
+		Color(1.0, 0.9, 0.35, 0.55),
+		2.0
+	)
+
+	draw_line(
+		Vector2.ZERO,
+		right_dir * radius,
+		Color(1.0, 0.9, 0.35, 0.55),
+		2.0
+	)
 
 func draw_player_body() -> void:
 	# Placeholder visual del jugador.

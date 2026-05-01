@@ -37,6 +37,15 @@ extends Node
 @export var aura_damage_per_second: float = 0.0
 @export var aura_radius: float = 0.0
 
+# Tiempo que se verá el arco del ataque.
+@export var attack_debug_duration: float = 0.12
+
+# Temporizador visual del ataque.
+var attack_debug_timer: float = 0.0
+
+# Dirección usada para dibujar el último ataque.
+var last_attack_direction: Vector2 = Vector2.RIGHT
+
 # Temporizador interno del cooldown.
 var attack_timer: float = 0.0
 
@@ -60,6 +69,10 @@ func process_combat(delta: float) -> void:
 	# Reducimos cooldown.
 	if attack_timer > 0.0:
 		attack_timer -= delta
+
+	# Reducimos el tiempo visible del arco de ataque.
+	if attack_debug_timer > 0.0:
+		attack_debug_timer -= delta
 
 	# Actualizamos dirección de ataque según movimiento.
 	update_facing_direction()
@@ -85,7 +98,11 @@ func try_melee_attack() -> void:
 		return
 
 	attack_timer = attack_cooldown
-
+	
+	#guardamos datos visuales del ataque
+	last_attack_direction = facing_direction
+	attack_debug_timer = attack_debug_duration
+	
 	var enemies := get_tree().get_nodes_in_group("enemies")
 
 	for enemy in enemies:
