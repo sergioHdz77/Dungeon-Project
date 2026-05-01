@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://f1qwwm0v8ok8"]
+
+[ext_resource type="Script" uid="uid://vfl2byp8j7t5" path="res://scripts/dungeon/rooms/dungeon_room.gd" id="1_vwi7l"]
+
+[node name="StartRoom" type="Node2D" unique_id=1880824940]
+script = ExtResource("1_vwi7l")
+
+[node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1521212431]

@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dkf454cjx2t0y"]
+
+[ext_resource type="Script" uid="uid://vfl2byp8j7t5" path="res://scripts/dungeon/rooms/dungeon_room.gd" id="1_0ah8e"]
+[ext_resource type="PackedScene" uid="uid://d33x6vbucvpe5" path="res://scenes/enemies/enemy.tscn" id="2_fnekb"]
+
+[node name="CombatRoom" type="Node2D" unique_id=573488946]
+script = ExtResource("1_0ah8e")
+enemy_scene = ExtResource("2_fnekb")
+
+[node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1688751154]
+position = Vector2(0, 120)
+
+[node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=2076010589]
+
+[node name="EnemySpawnPoint1" type="Marker2D" parent="EnemySpawnPoints" unique_id=918943993]
+position = Vector2(-180, 0)
+
+[node name="EnemySpawnPoint2" type="Marker2D" parent="EnemySpawnPoints" unique_id=1771183628]
+position = Vector2(180, 0)
+
+[node name="EnemySpawnPoint3" type="Marker2D" parent="EnemySpawnPoints" unique_id=1732646614]
+position = Vector2(0, -160)

@@ -1,166 +1,210 @@
 extends Node2D
 
-# Main es el coordinador principal de la escena.
-# No debería contener demasiada lógica propia.
-# Su trabajo es conectar señales entre sistemas:
-# RunManager, Player, HUD, pantallas y managers.
+# Main sigue siendo el coordinador principal,
+# pero esta versión ya NO coordina el survivor-like antiguo.
+#
+# De momento solo hace esto:
+# - muestra pantalla inicial
+# - espera a que el jugador pulse empezar
+# - arranca una run de dungeon simple
+# - escucha si el jugador muere
+# - muestra pantalla final
+#
+# Todavía NO genera mazmorras.
+# Todavía NO gestiona loot.
+# Todavía NO guarda inventario.
+# Eso vendrá después.
 
-@onready var run_manager = $RunManager
-@onready var upgrade_manager = $UpgradeManager
-@onready var player = $Player
-@onready var hud = $HUD
-@onready var start_screen = $StartScreen
-@onready var level_up_screen = $LevelUpScreen
-@onready var run_end_screen = $RunEndScreen
+@onready var dungeon_manager: Node = get_node_or_null("DungeonManager")
+@onready var dungeon_run_manager: Node = get_node_or_null("DungeonRunManager")
+@onready var player: Node = get_node_or_null("Player")
+@onready var hud: Node = get_node_or_null("HUD")
+@onready var start_screen: Node = get_node_or_null("StartScreen")
+@onready var run_end_screen: Node = get_node_or_null("RunEndScreen")
+
+var run_active: bool = false
+
 
 func _ready() -> void:
 	# Inicializa la semilla aleatoria.
-	# Esto afecta a upgrades aleatorios y enemigos aleatorios.
+	# Más adelante se usará para salas, loot y enemigos.
 	randomize()
-	
-	# Señales del RunManager.
-	# RunManager controla tiempo, inicio y final de run.
-	run_manager.run_finished.connect(_on_run_manager_finished)
-	run_manager.time_changed.connect(_on_run_manager_time_changed)
-	
+
 	# Señales del jugador.
-	# Player reemite señales de sus componentes internos.
-	player.level_up_requested.connect(_on_player_level_up_requested)
-	player.stats_changed.connect(update_hud)
-	player.player_died.connect(_on_player_died)
-	
-	# Señales de las pantallas UI.
-	start_screen.start_pressed.connect(_on_start_button_pressed)
-	level_up_screen.upgrade_selected.connect(_on_level_up_upgrade_selected)
-	run_end_screen.restart_pressed.connect(_on_restart_button_pressed)
-	
-	# Pintamos el HUD inicial y mostramos pantalla de inicio.
+	# De momento solo nos interesa vida/muerte y refrescar HUD.
+	if player != null:
+		if player.has_signal("stats_changed"):
+			player.stats_changed.connect(update_hud)
+
+		if player.has_signal("player_died"):
+			player.player_died.connect(_on_player_died)
+
+	# Pantalla inicial.
+	if start_screen != null:
+		if start_screen.has_signal("start_pressed"):
+			start_screen.start_pressed.connect(_on_start_button_pressed)
+
+	# Pantalla final.
+	if run_end_screen != null:
+		if run_end_screen.has_signal("restart_pressed"):
+			run_end_screen.restart_pressed.connect(_on_restart_button_pressed)
+
 	update_hud()
 	show_start_screen()
 
-func _on_run_manager_finished(victory: bool) -> void:
-	# RunManager avisa de que la run ha terminado.
-	# Main se encarga de guardar ahorro y mostrar pantalla final.
-	finish_run(victory)
-
-func _on_run_manager_time_changed(_remaining_time: int, _elapsed_time: float) -> void:
-	# El tiempo cambió, así que refrescamos HUD.
-	update_hud()
 
 func show_start_screen() -> void:
-	# Prepara una run nueva pero no la arranca todavía.
-	run_manager.prepare_run()
-	
-	# Mostramos la pantalla inicial con datos de meta-progresión.
-	start_screen.show_screen(
-		run_manager.run_duration_seconds,
-		SaveManager.meta_savings,
-		get_meta_unlock_text()
-	)
-	
-	# Pausamos el árbol para que no aparezcan enemigos ni avance el juego.
+	# Mostramos el menú inicial.
+	# Usamos la pantalla que ya tienes, aunque todavía tenga textos antiguos.
+	# Más adelante la convertiremos en menú principal con equipamiento.
+
+	if start_screen != null:
+		if start_screen.has_method("show_screen"):
+			# La firma antigua esperaba:
+			# duración, ahorros meta, texto de desbloqueos.
+			#
+			# Como ya no usamos temporizador ni ahorro de piso,
+			# le pasamos valores neutros.
+			start_screen.show_screen(
+				0,
+				0,
+				"Nuevo modo: mazmorra roguelite.\nSistema de equipamiento pendiente."
+			)
+		else:
+			start_screen.visible = true
+
+	# El juego queda pausado mientras estamos en el menú.
 	get_tree().paused = true
+
 
 func _on_start_button_pressed() -> void:
-	# El jugador pulsa "Empezar run".
-	start_screen.hide_screen()
-	
-	# Reanudamos el árbol antes de arrancar la run.
+	# El jugador pulsa empezar.
+
+	if start_screen != null:
+		if start_screen.has_method("hide_screen"):
+			start_screen.hide_screen()
+		else:
+			start_screen.visible = false
+
+	# Activamos la partida.
 	get_tree().paused = false
-	
-	# Ahora sí empieza el temporizador.
-	run_manager.start_run()
+	run_active = true
+
+	# Creamos la primera sala de la mazmorra.
+	# De momento solo existe una sala inicial estática.
+	if dungeon_manager != null:
+		if dungeon_manager.has_method("create_test_dungeon"):
+			dungeon_manager.create_test_dungeon()
+
+	# Si DungeonRunManager ya existe y tiene start_run(),
+	# lo llamamos. Si aún está vacío, no pasa nada.
+	if dungeon_run_manager != null:
+		if dungeon_run_manager.has_method("start_run"):
+			dungeon_run_manager.start_run()
+
 	update_hud()
 
-func _on_player_level_up_requested(_new_level: int) -> void:
-	# El jugador subió de nivel.
-	# Pedimos 3 mejoras aleatorias al UpgradeManager.
-	var choices: Array = upgrade_manager.get_random_upgrades(3)
-	
-	# Mostramos el menú de mejoras.
-	level_up_screen.show_screen(choices)
-	
-	# Pausamos el juego mientras el jugador decide.
-	get_tree().paused = true
-
-func _on_level_up_upgrade_selected(upgrade) -> void:
-	# El jugador ha elegido una mejora.
-	# Primero la registramos para mostrarla luego en pantalla final.
-	upgrade_manager.register_upgrade(upgrade)
-	
-	# Después aplicamos su efecto al jugador.
-	player.apply_upgrade(upgrade["id"])
-	
-	# Reanudamos la partida.
-	get_tree().paused = false
-	update_hud()
 
 func _on_player_died() -> void:
-	# El jugador murió.
-	# No cerramos la run directamente desde Player.
-	# Lo hacemos pasar por RunManager para mantener un único flujo de finalización.
-	run_manager.finish_run(false)
+	# El jugador ha muerto.
+	# Ya no pasamos por RunManager porque RunManager era de tiempo/survivor-like.
+
+	if not run_active:
+		return
+
+	finish_run(false)
+
 
 func finish_run(victory: bool) -> void:
-	# Al terminar una run, convertimos el ahorro asegurado de la run
-	# en ahorro meta persistente.
-	var secured_savings: int = player.get_run_savings()
-	SaveManager.add_savings(secured_savings)
-	
+	# Cierra la run actual.
+	# En esta primera migración NO guardamos ahorros,
+	# NO guardamos loot y NO tocamos inventario.
+
+	run_active = false
 	update_hud()
-	
-	# Pedimos el resumen de mejoras elegidas.
-	var upgrades_text: String = upgrade_manager.get_chosen_upgrades_text()
-	
-	# Mostramos pantalla final con estadísticas de la run.
-	run_end_screen.show_screen(
-		victory,
-		run_manager.get_elapsed_time(),
-		player.get_level(),
-		player.get_enemies_killed(),
-		player.get_total_xp_collected(),
-		player.get_total_coins_collected(),
-		secured_savings,
-		SaveManager.meta_savings,
-		upgrades_text
-	)
-	
-	# Pausamos el juego en pantalla final.
+
+	if run_end_screen != null:
+		if run_end_screen.has_method("show_screen"):
+			# Mantenemos la firma antigua para no tener que rehacer
+			# RunEndScreen todavía.
+			#
+			# Parámetros antiguos:
+			# victory,
+			# elapsed_time,
+			# level,
+			# enemies_killed,
+			# xp_collected,
+			# coins_collected,
+			# secured_savings,
+			# meta_savings,
+			# upgrades_text
+
+			var player_level := 1
+			var enemies_killed := 0
+			var xp_collected := 0
+			var coins_collected := 0
+
+			if player != null:
+				if player.has_method("get_level"):
+					player_level = player.get_level()
+
+				if player.has_method("get_enemies_killed"):
+					enemies_killed = player.get_enemies_killed()
+
+				if player.has_method("get_total_xp_collected"):
+					xp_collected = player.get_total_xp_collected()
+
+				if player.has_method("get_total_coins_collected"):
+					coins_collected = player.get_total_coins_collected()
+
+			run_end_screen.show_screen(
+				victory,
+				0,
+				player_level,
+				enemies_killed,
+				xp_collected,
+				coins_collected,
+				0,
+				0,
+				"Sistema antiguo de mejoras desactivado."
+			)
+		else:
+			run_end_screen.visible = true
+
+	# Pausamos en pantalla final.
 	get_tree().paused = true
 
+
 func _on_restart_button_pressed() -> void:
-	# Reinicia la escena actual para empezar otra run desde cero.
-	# El ahorro meta se mantiene porque está en SaveManager.
+	# Reinicia la escena actual.
+	# De momento es la forma más simple de empezar otra prueba limpia.
+
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
+
 func update_hud() -> void:
-	# Main no dibuja el HUD.
-	# Solo pasa datos al nodo HUD.
+	# El HUD todavía es el antiguo.
+	# No lo reescribimos ahora.
+	# Simplemente le pasamos valores neutros donde antes esperaba tiempo y ahorro meta.
+
 	if hud == null:
 		return
-	
-	hud.update_hud(
-		player,
-		run_manager.get_remaining_time(),
-		SaveManager.meta_savings
-	)
 
-func get_meta_unlock_text() -> String:
-	# Devuelve texto legible con los desbloqueos meta actuales.
-	var meta_savings: int = SaveManager.meta_savings
-	var text := ""
-	
-	text += get_unlock_line(meta_savings, 30, "+10 vida inicial")
-	text += get_unlock_line(meta_savings, 75, "+4 daño inicial")
-	text += get_unlock_line(meta_savings, 150, "+20 velocidad inicial")
-	text += get_unlock_line(meta_savings, 300, "+1 proyectil inicial")
-	
-	return text
+	if hud.has_method("update_hud") and player != null:
+		hud.update_hud(
+			player,
+			0,
+			0
+		)
 
-func get_unlock_line(meta_savings: int, required: int, description: String) -> String:
-	# Genera una línea de texto para un desbloqueo meta.
-	if meta_savings >= required:
-		return "✓ %s\n" % description
-	
-	return "✗ %s ahorro: %s\n" % [required, description]
+func _unhandled_input(event: InputEvent) -> void:
+	# Tecla temporal de debug para probar cambio de sala.
+	# Más adelante esto se sustituirá por puertas o por limpiar enemigos.
+	if not run_active:
+		return
+
+	if event.is_action_pressed("debug_next_room"):
+		if dungeon_manager != null:
+			if dungeon_manager.has_method("go_to_next_room"):
+				dungeon_manager.go_to_next_room()

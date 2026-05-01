@@ -36,14 +36,16 @@ func _ready() -> void:
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
-	# Si el jugador ha muerto, deja de moverse y atacar.
+	# Si el jugador ha muerto, deja de moverse.
 	if progression.is_dead:
 		return
 	
 	handle_movement()
 	
-	# Cada componente procesa su parte.
+	# Nuevo combate manual.
+	# Ya no dispara automáticamente porque hemos reescrito PlayerCombat.
 	combat.process_combat(delta)
+	
 	apply_passive_effects(delta)
 	
 	queue_redraw()
