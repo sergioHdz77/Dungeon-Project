@@ -462,3 +462,6 @@ func equip_weapon(item_id: String) -> void:
 
 func get_equipped_weapon_name() -> String:
 	return equipped_weapon_name
+
+func get_equipped_weapon_id() -> String:
+	return equipped_weapon_id

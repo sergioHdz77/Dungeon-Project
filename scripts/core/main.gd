@@ -153,21 +153,26 @@ func finish_run(victory: bool) -> void:
 	# - el loot de run pasa al inventario persistente.
 	#
 	# Si mueres:
+	# - pierdes el arma equipada.
 	# - el loot de run se pierde.
 	#
-	# Todavía NO gestionamos equipo perdido al morir.
-	# Eso vendrá cuando exista PlayerEquipment.
+	# Todavía NO gestionamos armadura ni otros slots.
 
 	run_active = false
 
+	var lost_equipment_text: String = ""
+
 	if victory:
-		# Guardamos el loot conseguido durante la run.
-		# Este es el primer paso real de inventario persistente.
+		# Si gana, el loot de run pasa al inventario persistente.
 		if not run_loot.is_empty():
 			SaveManager.add_inventory_items(run_loot)
 
 			print("Inventario persistente actual:")
 			print(SaveManager.get_inventory_text())
+	else:
+		# Si muere, pierde el equipo que llevaba equipado.
+		# El loot de run no se guarda.
+		lost_equipment_text = lose_equipped_items_on_death()
 
 	update_hud()
 
@@ -186,10 +191,10 @@ func finish_run(victory: bool) -> void:
 			# meta_savings,
 			# upgrades_text
 
-			var player_level := 1
-			var enemies_killed := 0
-			var xp_collected := 0
-			var coins_collected := 0
+			var player_level: int = 1
+			var enemies_killed: int = 0
+			var xp_collected: int = 0
+			var coins_collected: int = 0
 
 			if player != null:
 				if player.has_method("get_level"):
@@ -204,7 +209,7 @@ func finish_run(victory: bool) -> void:
 				if player.has_method("get_total_coins_collected"):
 					coins_collected = player.get_total_coins_collected()
 
-			var result_text := ""
+			var result_text: String = ""
 
 			if victory:
 				if run_loot.is_empty():
@@ -218,7 +223,10 @@ func finish_run(victory: bool) -> void:
 
 					result_text += "\nGuardado en inventario persistente."
 			else:
-				result_text = "Has muerto en la mazmorra.\nLoot perdido:\n"
+				result_text = "Has muerto en la mazmorra.\n\n"
+
+				result_text += lost_equipment_text
+				result_text += "\n\nLoot perdido:\n"
 
 				if run_loot.is_empty():
 					result_text += "- Ninguno"
@@ -304,3 +312,31 @@ func equip_first_weapon_from_inventory() -> void:
 			return
 
 	print("No hay armas en el inventario persistente para equipar.")
+	
+func lose_equipped_items_on_death() -> String:
+	# Elimina del inventario persistente el equipo que el jugador llevaba equipado.
+	# De momento solo gestionamos arma.
+	# Más adelante añadiremos armadura y otros slots.
+
+	if player == null:
+		return "No había equipo equipado."
+
+	if not player.has_method("get_equipped_weapon_id"):
+		return "No había equipo equipado."
+
+	var weapon_id: String = player.get_equipped_weapon_id()
+
+	if weapon_id.is_empty():
+		return "No había arma equipada."
+
+	var weapon_name: String = "Arma desconocida"
+
+	if player.has_method("get_equipped_weapon_name"):
+		weapon_name = player.get_equipped_weapon_name()
+
+	var removed: bool = SaveManager.remove_inventory_item_once(weapon_id)
+
+	if removed:
+		return "Equipo perdido:\n- %s" % weapon_name
+
+	return "El arma equipada no estaba en el inventario persistente."

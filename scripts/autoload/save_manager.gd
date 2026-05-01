@@ -83,6 +83,27 @@ func add_inventory_items(items: Array[Dictionary]) -> void:
 
 	print("Inventario persistente actualizado. Total items: ", persistent_inventory.size())
 
+func remove_inventory_item_once(item_id: String) -> bool:
+	# Elimina una sola copia de un item del inventario persistente.
+	# Esto es importante porque podemos tener varias espadas iguales.
+
+	if item_id.is_empty():
+		return false
+
+	for i in range(persistent_inventory.size()):
+		var item_data: Dictionary = persistent_inventory[i]
+		var current_id: String = str(item_data.get("id", ""))
+
+		if current_id == item_id:
+			var removed_name: String = str(item_data.get("name", "Objeto desconocido"))
+
+			persistent_inventory.remove_at(i)
+			save_game()
+
+			print("Item eliminado del inventario persistente: ", removed_name, " | id: ", item_id)
+			return true
+
+	return false
 
 func get_inventory_text() -> String:
 	# Devuelve texto legible del inventario persistente.
