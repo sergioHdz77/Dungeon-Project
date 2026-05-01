@@ -1,6 +1,7 @@
 extends Node
 
 signal dungeon_completed
+signal item_collected(item_id: String, display_name: String)
 
 # DungeonManager será el encargado de construir y cambiar salas.
 #
@@ -78,6 +79,9 @@ func load_current_room() -> void:
 
 	if current_room.has_signal("exit_requested"):
 		current_room.exit_requested.connect(_on_current_room_exit_requested)
+		
+	if current_room.has_signal("item_collected"):
+		current_room.item_collected.connect(_on_room_item_collected)
 
 	# Movemos al jugador al punto de aparición de esta sala.
 	move_player_to_room_spawn(current_room)
@@ -140,3 +144,10 @@ func _on_current_room_cleared() -> void:
 func _on_current_room_exit_requested() -> void:
 	# El jugador ha entrado en la puerta de salida de una sala limpia.
 	go_to_next_room()
+	
+func _on_room_item_collected(item_id: String, display_name: String) -> void:
+	# La sala avisa de que el jugador ha recogido un item.
+	# DungeonManager lo reemite hacia Main.
+
+	print("DungeonManager recibe loot: ", display_name)
+	item_collected.emit(item_id, display_name)

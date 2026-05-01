@@ -24,6 +24,7 @@ extends Node2D
 
 var run_active: bool = false
 
+var run_loot: Array[String] = []
 
 func _ready() -> void:
 	# Inicializa la semilla aleatoria.
@@ -45,6 +46,9 @@ func _ready() -> void:
 		if dungeon_manager.has_signal("dungeon_completed"):
 			dungeon_manager.dungeon_completed.connect(_on_dungeon_completed)
 
+		if dungeon_manager.has_signal("item_collected"):
+			dungeon_manager.item_collected.connect(_on_item_collected)
+			
 	# Pantalla inicial.
 	if start_screen != null:
 		if start_screen.has_signal("start_pressed"):
@@ -174,9 +178,21 @@ func finish_run(victory: bool) -> void:
 			var result_text := ""
 
 			if victory:
-				result_text = "Mazmorra completada.\nLoot e inventario persistente pendientes."
+				if run_loot.is_empty():
+					result_text = "Mazmorra completada.\nNo has conseguido loot."
+				else:
+					result_text = "Mazmorra completada.\nLoot conseguido:\n"
+
+				for item_name in run_loot:
+					result_text += "- %s\n" % item_name
 			else:
-				result_text = "Has muerto en la mazmorra.\nPérdida de equipo pendiente."
+				result_text = "Has muerto en la mazmorra.\nLoot perdido:\n"
+
+				if run_loot.is_empty():
+					result_text += "- Ninguno"
+				else:
+					for item_name in run_loot:
+						result_text += "- %s\n" % item_name
 
 			run_end_screen.show_screen(
 				victory,
@@ -217,3 +233,11 @@ func update_hud() -> void:
 			0,
 			0
 		)
+		
+func _on_item_collected(_item_id: String, display_name: String) -> void:
+	# Guardamos el loot conseguido durante esta run.
+	# Todavía NO es inventario persistente.
+	# Solo se usa para mostrarlo al final.
+
+	run_loot.append(display_name)
+	print("Loot de run añadido: ", display_name)

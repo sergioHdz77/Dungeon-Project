@@ -9,6 +9,7 @@ extends Node2D
 
 signal room_cleared
 signal exit_requested
+signal item_collected(item_id: String, display_name: String)
 
 @export var room_size: Vector2 = Vector2(720, 420)
 @export var floor_color: Color = Color(0.18, 0.18, 0.20)
@@ -18,6 +19,12 @@ signal exit_requested
 # En StartRoom lo dejamos vacío.
 # En CombatRoom asignaremos una escena de enemigo existente.
 @export var enemy_scene: PackedScene
+
+# Si está activo, esta sala soltará loot al limpiarse.
+@export var drops_loot_on_clear: bool = false
+
+# Escena del loot que aparecerá al limpiar la sala.
+@export var loot_item_scene: PackedScene
 
 var player: Node2D = null
 var difficulty: int = 1
@@ -170,18 +177,19 @@ func unlock_exit_door() -> void:
 	if exit_door.has_method("unlock"):
 		exit_door.unlock()
 
-
 func mark_room_as_cleared() -> void:
 	# La sala queda marcada como limpia.
-	# Esto desbloquea la puerta y avisa al DungeonManager.
+	# Esto puede generar loot, desbloquear la puerta y avisar al DungeonManager.
 
 	if room_is_cleared:
 		return
 
 	room_is_cleared = true
-	unlock_exit_door()
-	room_cleared.emit()
 
+	spawn_clear_loot()
+	unlock_exit_door()
+
+	room_cleared.emit()
 
 func _on_exit_door_requested() -> void:
 	# La puerta solo debería funcionar si la sala ya está limpia.
@@ -189,3 +197,32 @@ func _on_exit_door_requested() -> void:
 		return
 
 	exit_requested.emit()
+
+func spawn_clear_loot() -> void:
+	# Genera loot cuando la sala se limpia.
+	# De momento lo usaremos solo en BossRoom.
+
+	if not drops_loot_on_clear:
+		return
+
+	if loot_item_scene == null:
+		return
+
+	var loot_item := loot_item_scene.instantiate() as Node2D
+
+	if loot_item == null:
+		return
+
+	add_child(loot_item)
+
+	# Lo colocamos en el centro de la sala.
+	# Más adelante podremos usar un Marker2D específico.
+	loot_item.global_position = global_position
+
+	if loot_item.has_signal("collected"):
+		loot_item.collected.connect(_on_loot_item_collected)
+
+
+func _on_loot_item_collected(item_id: String, display_name: String) -> void:
+	# Reemitimos el loot hacia DungeonManager.
+	item_collected.emit(item_id, display_name)
