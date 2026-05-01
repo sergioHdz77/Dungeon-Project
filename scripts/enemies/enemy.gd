@@ -70,13 +70,26 @@ func _physics_process(delta: float) -> void:
 	velocity = dir * speed
 	move_and_slide()
 
-	# Daño por contacto usando colisiones reales.
 	for i in get_slide_collision_count():
 		var collision: KinematicCollision2D = get_slide_collision(i)
 		var collider: Object = collision.get_collider()
-		
-		if collider != null and collider.has_method("take_damage"):
-			collider.take_damage(contact_damage * delta)
+
+		if collider == null:
+			continue
+
+		# Solo hacemos daño al jugador.
+		# Esto evita que un enemigo intente llamar a take_damage(amount, source)
+		# sobre otro enemigo, cuyo take_damage solo acepta amount.
+		var collider_node := collider as Node
+
+		if collider_node == null:
+			continue
+
+		if not collider_node.is_in_group("player") and collider_node.name != "Player":
+			continue
+
+		if collider_node.has_method("take_damage"):
+			collider_node.take_damage(contact_damage * delta, self)
 
 	queue_redraw()
 

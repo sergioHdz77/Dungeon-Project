@@ -191,15 +191,15 @@ func try_secure_savings(cost: int, amount: int) -> bool:
 func register_kill() -> void:
 	progression.register_kill()
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, damage_source: Node2D = null) -> void:
 	# El daño pasa primero por Combat porque Combat sabe
-	# si el jugador está bloqueando o no.
+	# si el jugador está bloqueando y hacia dónde mira.
 
 	var final_damage: float = amount
 
 	if combat != null:
 		if combat.has_method("get_modified_incoming_damage"):
-			final_damage = combat.get_modified_incoming_damage(amount)
+			final_damage = combat.get_modified_incoming_damage(amount, damage_source)
 
 	progression.take_damage(final_damage)
 

@@ -215,15 +215,43 @@ func update_block_state(delta: float) -> void:
 		stamina += stamina_regen_per_second * delta
 		stamina = minf(stamina, max_stamina)
 	
-func get_modified_incoming_damage(amount: float) -> float:
-	# Permite que Player pregunte cuánto daño debe recibir realmente.
-	# Si está bloqueando, reducimos el daño.
-	# Si no está bloqueando, entra completo.
+func get_modified_incoming_damage(amount: float, damage_source: Node2D = null) -> float:
+	# Si no está bloqueando, recibe el daño completo.
+	if not is_blocking:
+		return amount
 
-	if is_blocking:
+	# Si no conocemos la fuente del daño, aplicamos bloqueo igualmente
+	# para mantener compatibilidad con trampas o daño antiguo.
+	if damage_source == null:
 		return amount * block_damage_multiplier
 
+	# Comprobamos si la fuente del daño está delante del jugador.
+	if is_damage_source_in_front(damage_source):
+		return amount * block_damage_multiplier
+
+	# Si el ataque viene por detrás o por un lateral muy abierto,
+	# el bloqueo no protege.
 	return amount
+	
+func is_damage_source_in_front(damage_source: Node2D) -> bool:
+	if player == null:
+		return false
+
+	var to_source: Vector2 = damage_source.global_position - player.global_position
+
+	if to_source.length() <= 0.01:
+		return true
+
+	var direction_to_source: Vector2 = to_source.normalized()
+
+	# Ángulo entre la dirección de bloqueo y la posición del enemigo.
+	var angle: float = facing_direction.angle_to(direction_to_source)
+	var angle_degrees: float = absf(rad_to_deg(angle))
+
+	# Usamos un cono frontal amplio para que no sea frustrante.
+	var block_arc_degrees: float = 140.0
+
+	return angle_degrees <= block_arc_degrees / 2.0
 
 func get_movement_speed_multiplier() -> float:
 	# Permite que Player pregunte si debe moverse más lento.
