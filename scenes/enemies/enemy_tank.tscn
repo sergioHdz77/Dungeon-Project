@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://rpd5uj63mqxa"]
+
+[ext_resource type="Script" uid="uid://dgomvbjdehfja" path="res://scripts/enemies/enemy.gd" id="1_cnr0l"]
+[ext_resource type="Texture2D" uid="uid://cvcdbd7b5vb22" path="res://art/enemyFlyingAlt_2.png" id="2_v7ts0"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_v6fml"]
+
+[node name="EnemyTank" type="CharacterBody2D" unique_id=1173866472]
+script = ExtResource("1_cnr0l")
+speed = 70.0
+max_health = 160.0
+contact_damage = 22.0
+xp_value = 22.0
+coin_value = 3
+draw_radius = 22.0
+enemy_color = Color(0.75966394, 0.21899226, 0.7543805, 1)
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1205511733]
+visible = false
+texture = ExtResource("2_v7ts0")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
+scale = Vector2(6, 6)
+shape = SubResource("CircleShape2D_v6fml")

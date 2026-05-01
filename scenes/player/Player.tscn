@@ -1,0 +1,56 @@
+[gd_scene format=3 uid="uid://8h3i1lsxrk0d"]
+
+[ext_resource type="Texture2D" uid="uid://baduvkt1wbtwl" path="res://art/playerGrey_up2.png" id="1_p0vlq"]
+[ext_resource type="Script" uid="uid://5x1iekyf85fg" path="res://scripts/player/player_economy.gd" id="2_gfjak"]
+[ext_resource type="Script" uid="uid://bu2ucfbbo8keg" path="res://scripts/player/player_combat.gd" id="3_4kuee"]
+[ext_resource type="Script" uid="uid://ceevpucsyjqkf" path="res://scripts/player/player_progression.gd" id="4_524rm"]
+
+[sub_resource type="GDScript" id="GDScript_p0vlq"]
+script/source = "extends CharacterBody2D
+
+
+const SPEED = 300.0
+const JUMP_VELOCITY = -400.0
+
+
+func _physics_process(delta: float) -> void:
+	# Add the gravity.
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+
+	# Handle jump.
+	if Input.is_action_just_pressed(\"ui_accept\") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+
+	# Get the input direction and handle the movement/deceleration.
+	# As good practice, you should replace UI actions with custom gameplay actions.
+	var direction := Input.get_axis(\"ui_left\", \"ui_right\")
+	if direction:
+		velocity.x = direction * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+
+	move_and_slide()
+"
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_v6fml"]
+
+[node name="Player" type="CharacterBody2D" unique_id=1173866472]
+script = SubResource("GDScript_p0vlq")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1205511733]
+visible = false
+texture = ExtResource("1_p0vlq")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
+scale = Vector2(6, 6)
+shape = SubResource("CircleShape2D_v6fml")
+
+[node name="Economy" type="Node" parent="." unique_id=1420025847]
+script = ExtResource("2_gfjak")
+
+[node name="Combat" type="Node" parent="." unique_id=1107329975]
+script = ExtResource("3_4kuee")
+
+[node name="Progression" type="Node" parent="." unique_id=99627898]
+script = ExtResource("4_524rm")

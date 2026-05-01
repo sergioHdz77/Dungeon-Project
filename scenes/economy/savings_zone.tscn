@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://ttdxgqytign6"]
+
+[ext_resource type="Script" uid="uid://wru3qbuy3375" path="res://scripts/economy/savings_zone.gd" id="1_jfyig"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pt6dm"]
+
+[node name="SavingsZone" type="Area2D" unique_id=1528034163]
+script = ExtResource("1_jfyig")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=592876119]
+shape = SubResource("CircleShape2D_pt6dm")
