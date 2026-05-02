@@ -39,6 +39,9 @@ var persistent_gold: int = 0
 # Guardamos solo el id. El item real sigue estando en persistent_inventory.
 var equipped_weapon_id: String = ""
 
+# Armadura seleccionada para entrar en la próxima run.
+var equipped_armor_id: String = ""
+
 # Inventario persistente del jugador.
 # Aquí se guardan los objetos que el jugador conserva al ganar una mazmorra.
 #
@@ -149,6 +152,20 @@ func set_equipped_weapon(item_id: String) -> void:
 func clear_equipped_weapon() -> void:
 	equipped_weapon_id = ""
 	save_game()
+	
+func set_equipped_armor(item_id: String) -> void:
+	# Guarda qué armadura quiere usar el jugador en la próxima run.
+	# Si item_id está vacío, entra sin armadura.
+
+	equipped_armor_id = item_id
+	save_game()
+
+	print("Armadura seleccionada guardada: ", equipped_armor_id)
+
+
+func clear_equipped_armor() -> void:
+	equipped_armor_id = ""
+	save_game()
 
 func remove_inventory_item_once(item_id: String) -> bool:
 	# Elimina una sola copia de un item del inventario persistente.
@@ -201,7 +218,9 @@ func save_game() -> void:
 		# Nuevo sistema
 		"persistent_gold": persistent_gold,
 		"persistent_inventory": persistent_inventory,
-		"equipped_weapon_id": equipped_weapon_id
+		"equipped_weapon_id": equipped_weapon_id,
+		"equipped_armor_id": equipped_armor_id
+
 	}
 	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -251,6 +270,12 @@ func load_game() -> void:
 		equipped_weapon_id = str(data["equipped_weapon_id"])
 	else:
 		equipped_weapon_id = ""
+	
+	# Armadura equipada seleccionada.
+	if data.has("equipped_armor_id"):
+		equipped_armor_id = str(data["equipped_armor_id"])
+	else:
+		equipped_armor_id = ""
 
 	# Nuevo inventario persistente.
 	persistent_inventory.clear()
@@ -291,4 +316,5 @@ func _reset_runtime_values() -> void:
 	meta_savings = 0
 	persistent_gold = 0
 	equipped_weapon_id = ""
+	equipped_armor_id = ""
 	persistent_inventory.clear()

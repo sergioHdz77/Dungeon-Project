@@ -64,6 +64,9 @@ func connect_ui_signals() -> void:
 		if start_screen.has_signal("weapon_selected"):
 			start_screen.weapon_selected.connect(_on_weapon_selected)
 
+		if start_screen.has_signal("armor_selected"):
+			start_screen.armor_selected.connect(_on_armor_selected)
+
 	if run_end_screen != null:
 		if run_end_screen.has_signal("restart_pressed"):
 			run_end_screen.restart_pressed.connect(_on_restart_button_pressed)
@@ -77,16 +80,26 @@ func show_start_screen() -> void:
 	if start_screen != null:
 		if start_screen.has_method("show_screen"):
 			var inventory_text: String = SaveManager.get_inventory_text()
+
 			var selected_weapon_id: String = get_valid_selected_weapon_id()
-			var equipped_weapon_text: String = get_equipped_weapon_menu_text(selected_weapon_id)
+			var selected_armor_id: String = get_valid_selected_armor_id()
+
+			var equipment_text: String = get_equipment_menu_text(
+				selected_weapon_id,
+				selected_armor_id
+			)
+
 			var weapon_options: Array[Dictionary] = get_weapon_options_from_inventory()
+			var armor_options: Array[Dictionary] = get_armor_options_from_inventory()
 
 			start_screen.show_screen(
 				SaveManager.persistent_gold,
 				inventory_text,
-				equipped_weapon_text,
+				equipment_text,
 				weapon_options,
-				selected_weapon_id
+				selected_weapon_id,
+				armor_options,
+				selected_armor_id
 			)
 		else:
 			start_screen.visible = true
@@ -122,7 +135,8 @@ func start_dungeon_run() -> void:
 
 	# Equipamiento elegido desde el menú.
 	equip_selected_weapon_from_inventory()
-
+	equip_selected_armor_from_inventory()
+	
 	# Creamos la mazmorra actual.
 	if dungeon_manager != null:
 		if dungeon_manager.has_method("create_test_dungeon"):
@@ -322,6 +336,22 @@ func equip_selected_weapon_from_inventory() -> void:
 
 	player.equip_weapon(selected_weapon_id)
 
+
+func equip_selected_armor_from_inventory() -> void:
+	if player == null:
+		return
+
+	if not player.has_method("equip_armor"):
+		return
+
+	var selected_armor_id: String = get_valid_selected_armor_id()
+
+	if selected_armor_id.is_empty():
+		print("El jugador entra sin armadura equipada.")
+		return
+
+	player.equip_armor(selected_armor_id)
+
 func _on_weapon_selected(item_id: String) -> void:
 	# Guarda el arma elegida desde el menú.
 	# Si item_id está vacío, el jugador entra sin arma.
@@ -329,29 +359,57 @@ func _on_weapon_selected(item_id: String) -> void:
 	SaveManager.set_equipped_weapon(item_id)
 	show_start_screen()
 
+func _on_armor_selected(item_id: String) -> void:
+	SaveManager.set_equipped_armor(item_id)
+	show_start_screen()
+
 func lose_equipped_items_on_death() -> String:
 	if player == null:
 		return "No había equipo equipado."
 
-	if not player.has_method("get_equipped_weapon_id"):
+	var lost_lines: Array[String] = []
+
+	# Arma equipada.
+	if player.has_method("get_equipped_weapon_id"):
+		var weapon_id: String = player.get_equipped_weapon_id()
+
+		if not weapon_id.is_empty():
+			var weapon_name: String = "Arma desconocida"
+
+			if player.has_method("get_equipped_weapon_name"):
+				weapon_name = player.get_equipped_weapon_name()
+
+			var removed_weapon: bool = SaveManager.remove_inventory_item_once(weapon_id)
+
+			if removed_weapon:
+				SaveManager.clear_equipped_weapon()
+				lost_lines.append("- %s" % weapon_name)
+
+	# Armadura equipada.
+	if player.has_method("get_equipped_armor_id"):
+		var armor_id: String = player.get_equipped_armor_id()
+
+		if not armor_id.is_empty():
+			var armor_name: String = "Armadura desconocida"
+
+			if player.has_method("get_equipped_armor_name"):
+				armor_name = player.get_equipped_armor_name()
+
+			var removed_armor: bool = SaveManager.remove_inventory_item_once(armor_id)
+
+			if removed_armor:
+				SaveManager.clear_equipped_armor()
+				lost_lines.append("- %s" % armor_name)
+
+	if lost_lines.is_empty():
 		return "No había equipo equipado."
 
-	var weapon_id: String = player.get_equipped_weapon_id()
+	var text: String = "Equipo perdido:\n"
 
-	if weapon_id.is_empty():
-		return "No había arma equipada."
+	for line in lost_lines:
+		text += "%s\n" % line
 
-	var weapon_name: String = "Arma desconocida"
-
-	if player.has_method("get_equipped_weapon_name"):
-		weapon_name = player.get_equipped_weapon_name()
-
-	var removed: bool = SaveManager.remove_inventory_item_once(weapon_id)
-
-	if removed:
-		return "Equipo perdido:\n- %s" % weapon_name
-
-	return "El arma equipada no estaba en el inventario persistente."
+	return text.strip_edges()
 
 
 # -------------------------------------------------------------------
@@ -413,6 +471,56 @@ func get_valid_selected_weapon_id() -> String:
 	# Si el arma guardada ya no existe, limpiamos la selección.
 	SaveManager.clear_equipped_weapon()
 	return ""
+	
+func get_armor_options_from_inventory() -> Array[Dictionary]:
+	var armors: Array[Dictionary] = []
+
+	for item_data: Dictionary in SaveManager.persistent_inventory:
+		var item_id: String = str(item_data.get("id", ""))
+
+		if item_id.is_empty():
+			continue
+
+		if not ItemDatabase.is_armor(item_id):
+			continue
+
+		var armor_data: Dictionary = {
+			"id": item_id,
+			"name": ItemDatabase.get_item_name(item_id)
+		}
+
+		armors.append(armor_data)
+
+	return armors
+
+
+func get_valid_selected_armor_id() -> String:
+	var selected_armor_id: String = SaveManager.equipped_armor_id
+
+	if selected_armor_id.is_empty():
+		return ""
+
+	if inventory_contains_item_id(selected_armor_id) and ItemDatabase.is_armor(selected_armor_id):
+		return selected_armor_id
+
+	SaveManager.clear_equipped_armor()
+	return ""
+
+
+func get_equipment_menu_text(selected_weapon_id: String, selected_armor_id: String) -> String:
+	var weapon_text: String = "Arma: ninguna"
+	var armor_text: String = "Armadura: ninguna"
+
+	if not selected_weapon_id.is_empty():
+		weapon_text = "Arma: %s" % ItemDatabase.get_item_name(selected_weapon_id)
+
+	if not selected_armor_id.is_empty():
+		armor_text = "Armadura: %s" % ItemDatabase.get_item_name(selected_armor_id)
+
+	return "Equipo para la próxima run:\n%s\n%s" % [
+		weapon_text,
+		armor_text
+	]
 
 func inventory_contains_item_id(item_id: String) -> bool:
 	if item_id.is_empty():

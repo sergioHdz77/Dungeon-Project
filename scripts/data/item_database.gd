@@ -1,48 +1,73 @@
 extends RefCounted
 
 # Base de datos provisional de items.
-# De momento usamos un Dictionary simple.
-# Más adelante esto podrá convertirse en Resources, JSON o una base más limpia.
+# Más adelante esto podrá pasar a Resources o JSON.
 
 const ITEMS: Dictionary = {
-	"iron_sword": {
-		"id": "iron_sword",
-		"name": "Espada de hierro",
-		"type": "weapon",
-		"attack_damage_bonus": 10.0
-	},
+	# -------------------------
+	# ARMAS
+	# -------------------------
+
 	"rusty_sword": {
 		"id": "rusty_sword",
 		"name": "Espada oxidada",
 		"type": "weapon",
 		"attack_damage_bonus": 4.0
 	},
+
+	"iron_sword": {
+		"id": "iron_sword",
+		"name": "Espada de hierro",
+		"type": "weapon",
+		"attack_damage_bonus": 10.0
+	},
+
 	"hunter_dagger": {
 		"id": "hunter_dagger",
 		"name": "Daga de cazador",
 		"type": "weapon",
 		"attack_damage_bonus": 6.0
+	},
+
+	"war_axe": {
+		"id": "war_axe",
+		"name": "Hacha de guerra",
+		"type": "weapon",
+		"attack_damage_bonus": 14.0
+	},
+
+	# -------------------------
+	# ARMADURAS
+	# -------------------------
+
+	"worn_tunic": {
+		"id": "worn_tunic",
+		"name": "Túnica gastada",
+		"type": "armor",
+		"damage_taken_multiplier": 0.95
+	},
+
+	"leather_armor": {
+		"id": "leather_armor",
+		"name": "Cota de cuero",
+		"type": "armor",
+		"damage_taken_multiplier": 0.85
+	},
+
+	"chainmail": {
+		"id": "chainmail",
+		"name": "Cota de malla",
+		"type": "armor",
+		"damage_taken_multiplier": 0.72
 	}
 }
 
 
 static func get_item(item_id: String) -> Dictionary:
-	# Devuelve la definición del item.
-	# Si no existe, devuelve un Dictionary vacío.
-
 	if not ITEMS.has(item_id):
 		return {}
 
 	return ITEMS[item_id].duplicate()
-
-
-static func is_weapon(item_id: String) -> bool:
-	var item_data: Dictionary = get_item(item_id)
-
-	if item_data.is_empty():
-		return false
-
-	return str(item_data.get("type", "")) == "weapon"
 
 
 static func get_item_name(item_id: String) -> String:
@@ -52,3 +77,20 @@ static func get_item_name(item_id: String) -> String:
 		return "Objeto desconocido"
 
 	return str(item_data.get("name", "Objeto desconocido"))
+
+
+static func get_item_type(item_id: String) -> String:
+	var item_data: Dictionary = get_item(item_id)
+
+	if item_data.is_empty():
+		return ""
+
+	return str(item_data.get("type", ""))
+
+
+static func is_weapon(item_id: String) -> bool:
+	return get_item_type(item_id) == "weapon"
+
+
+static func is_armor(item_id: String) -> bool:
+	return get_item_type(item_id) == "armor"

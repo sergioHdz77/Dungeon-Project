@@ -40,6 +40,13 @@ signal player_died
 var equipped_weapon_id: String = ""
 var equipped_weapon_name: String = "Sin arma"
 
+var equipped_armor_id: String = ""
+var equipped_armor_name: String = "Sin armadura"
+
+# Multiplicador final de daño recibido por armadura.
+# 1.0 = daño completo.
+# 0.85 = recibe el 85% del daño.
+var armor_damage_taken_multiplier: float = 1.0
 
 # -------------------------------------------------------------------
 # CICLO DE VIDA
@@ -251,9 +258,13 @@ func register_kill() -> void:
 func take_damage(amount: float, damage_source: Node2D = null) -> void:
 	var final_damage: float = amount
 
+	# Primero aplicamos bloqueo.
 	if combat != null:
 		if combat.has_method("get_modified_incoming_damage"):
 			final_damage = combat.get_modified_incoming_damage(amount, damage_source)
+
+	# Después aplicamos reducción de armadura.
+	final_damage *= armor_damage_taken_multiplier
 
 	progression.take_damage(final_damage)
 
@@ -295,14 +306,48 @@ func equip_weapon(item_id: String) -> void:
 	stats_changed.emit()
 	queue_redraw()
 
+func equip_armor(item_id: String) -> void:
+	if item_id.is_empty():
+		return
+
+	var item_data: Dictionary = ItemDatabase.get_item(item_id)
+
+	if item_data.is_empty():
+		push_warning("No existe item en ItemDatabase: %s" % item_id)
+		return
+
+	var item_type: String = str(item_data.get("type", ""))
+
+	if item_type != "armor":
+		push_warning("El item no es una armadura: %s" % item_id)
+		return
+
+	equipped_armor_id = item_id
+	equipped_armor_name = str(item_data.get("name", "Armadura desconocida"))
+
+	armor_damage_taken_multiplier = float(item_data.get("damage_taken_multiplier", 1.0))
+
+	print(
+		"Armadura equipada: ",
+		equipped_armor_name,
+		" | multiplicador daño recibido: ",
+		armor_damage_taken_multiplier
+	)
+
+	stats_changed.emit()
+	queue_redraw()
 
 func get_equipped_weapon_name() -> String:
 	return equipped_weapon_name
 
-
 func get_equipped_weapon_id() -> String:
 	return equipped_weapon_id
 
+func get_equipped_armor_name() -> String:
+	return equipped_armor_name
+
+func get_equipped_armor_id() -> String:
+	return equipped_armor_id
 
 # -------------------------------------------------------------------
 # DIBUJO DEBUG / PLACEHOLDER

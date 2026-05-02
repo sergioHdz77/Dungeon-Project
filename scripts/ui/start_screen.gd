@@ -1,14 +1,16 @@
 extends CanvasLayer
 
 # Pantalla inicial del juego.
-# Muestra oro, inventario persistente y permite elegir arma.
+# Muestra oro, inventario persistente y permite elegir equipo.
 
 signal start_pressed
 signal weapon_selected(item_id: String)
+signal armor_selected(item_id: String)
 
 var overlay: Control = null
 var info_label: Label = null
 var weapon_option_button: OptionButton = null
+var armor_option_button: OptionButton = null
 
 
 func _ready() -> void:
@@ -36,7 +38,7 @@ func build_ui() -> void:
 	overlay.add_child(center_container)
 	
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(660, 500)
+	panel.custom_minimum_size = Vector2(680, 560)
 	center_container.add_child(panel)
 	
 	var margin := MarginContainer.new()
@@ -47,7 +49,7 @@ func build_ui() -> void:
 	panel.add_child(margin)
 	
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 18)
+	vbox.add_theme_constant_override("separation", 16)
 	margin.add_child(vbox)
 	
 	var title := Label.new()
@@ -68,13 +70,23 @@ func build_ui() -> void:
 	vbox.add_child(weapon_title)
 
 	weapon_option_button = OptionButton.new()
-	weapon_option_button.custom_minimum_size = Vector2(360, 42)
+	weapon_option_button.custom_minimum_size = Vector2(380, 42)
 	weapon_option_button.item_selected.connect(_on_weapon_option_selected)
 	vbox.add_child(weapon_option_button)
+
+	var armor_title := Label.new()
+	armor_title.text = "Armadura equipada"
+	armor_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(armor_title)
+
+	armor_option_button = OptionButton.new()
+	armor_option_button.custom_minimum_size = Vector2(380, 42)
+	armor_option_button.item_selected.connect(_on_armor_option_selected)
+	vbox.add_child(armor_option_button)
 	
 	var start_button := Button.new()
 	start_button.text = "Entrar en la mazmorra"
-	start_button.custom_minimum_size = Vector2(360, 54)
+	start_button.custom_minimum_size = Vector2(380, 54)
 	start_button.pressed.connect(_on_start_button_pressed)
 	vbox.add_child(start_button)
 
@@ -82,17 +94,20 @@ func build_ui() -> void:
 func show_screen(
 	gold: int,
 	inventory_text: String,
-	equipped_weapon_text: String,
+	equipment_text: String,
 	weapon_options: Array[Dictionary],
-	selected_weapon_id: String
+	selected_weapon_id: String,
+	armor_options: Array[Dictionary],
+	selected_armor_id: String
 ) -> void:
 	info_label.text = "Oro: %s\n\nInventario persistente:\n%s\n\n%s" % [
 		gold,
 		inventory_text,
-		equipped_weapon_text
+		equipment_text
 	]
 
 	refresh_weapon_options(weapon_options, selected_weapon_id)
+	refresh_armor_options(armor_options, selected_armor_id)
 	
 	overlay.visible = true
 
@@ -100,7 +115,6 @@ func show_screen(
 func refresh_weapon_options(weapon_options: Array[Dictionary], selected_weapon_id: String) -> void:
 	weapon_option_button.clear()
 
-	# Opción para entrar sin arma.
 	weapon_option_button.add_item("Sin arma")
 	weapon_option_button.set_item_metadata(0, "")
 
@@ -123,6 +137,31 @@ func refresh_weapon_options(weapon_options: Array[Dictionary], selected_weapon_i
 	weapon_option_button.select(selected_index)
 
 
+func refresh_armor_options(armor_options: Array[Dictionary], selected_armor_id: String) -> void:
+	armor_option_button.clear()
+
+	armor_option_button.add_item("Sin armadura")
+	armor_option_button.set_item_metadata(0, "")
+
+	var selected_index: int = 0
+
+	for armor_data: Dictionary in armor_options:
+		var item_id: String = str(armor_data.get("id", ""))
+		var item_name: String = str(armor_data.get("name", "Armadura desconocida"))
+
+		if item_id.is_empty():
+			continue
+
+		var index: int = armor_option_button.item_count
+		armor_option_button.add_item(item_name)
+		armor_option_button.set_item_metadata(index, item_id)
+
+		if item_id == selected_armor_id:
+			selected_index = index
+
+	armor_option_button.select(selected_index)
+
+
 func hide_screen() -> void:
 	overlay.visible = false
 
@@ -130,6 +169,11 @@ func hide_screen() -> void:
 func _on_weapon_option_selected(index: int) -> void:
 	var item_id: String = str(weapon_option_button.get_item_metadata(index))
 	weapon_selected.emit(item_id)
+
+
+func _on_armor_option_selected(index: int) -> void:
+	var item_id: String = str(armor_option_button.get_item_metadata(index))
+	armor_selected.emit(item_id)
 
 
 func _on_start_button_pressed() -> void:
