@@ -8,6 +8,7 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 # - dibujar una sala placeholder
 # - bloquear/desbloquear puerta de salida
 # - generar enemigos en puntos fijos
+# - elegir tipos de enemigos según dificultad
 # - detectar cuándo la sala queda limpia
 # - soltar loot opcional al limpiarse
 
@@ -29,20 +30,23 @@ signal item_collected(item_id: String, display_name: String)
 # ENEMIGOS
 # -------------------------------------------------------------------
 
-# En StartRoom se deja vacío.
-# En CombatRoom/BossRoom se asigna una escena de enemigo.
+# Fallback: enemigo único de la sala.
+# En BossRoom puedes seguir usando esto para boss_enemy.tscn.
 @export var enemy_scene: PackedScene
+
+# Pool opcional de enemigos.
+# En CombatRoom puedes meter aquí:
+# enemy_grunt, enemy_fast, enemy_tank.
+#
+# Si está vacío, se usa enemy_scene.
+@export var enemy_scenes: Array[PackedScene] = []
 
 
 # -------------------------------------------------------------------
 # LOOT
 # -------------------------------------------------------------------
 
-# Si está activo, la sala soltará loot al limpiarse.
-# De momento lo usamos para BossRoom.
 @export var drops_loot_on_clear: bool = false
-
-# Escena del loot que aparecerá al limpiar la sala.
 @export var loot_item_scene: PackedScene
 
 
@@ -69,7 +73,7 @@ func setup_room(new_player: Node2D, new_difficulty: int) -> void:
 
 	setup_exit_door()
 
-	if enemy_scene == null:
+	if not has_any_enemy_scene():
 		# Sala segura sin enemigos, por ejemplo StartRoom.
 		mark_room_as_cleared()
 		return
@@ -77,10 +81,20 @@ func setup_room(new_player: Node2D, new_difficulty: int) -> void:
 	spawn_enemies()
 
 	if alive_enemies <= 0:
-		# Si no se generó ningún enemigo, no bloqueamos al jugador.
 		mark_room_as_cleared()
 	else:
 		lock_exit_door()
+
+
+func has_any_enemy_scene() -> bool:
+	if enemy_scene != null:
+		return true
+
+	for scene in enemy_scenes:
+		if scene != null:
+			return true
+
+	return false
 
 
 # -------------------------------------------------------------------
@@ -104,16 +118,21 @@ func spawn_enemies() -> void:
 
 
 func spawn_enemy_at(spawn_position: Vector2) -> void:
-	var enemy := enemy_scene.instantiate() as Node2D
+	var selected_enemy_scene: PackedScene = pick_enemy_scene()
+
+	if selected_enemy_scene == null:
+		push_warning("%s: no hay enemy_scene válida." % name)
+		return
+
+	var enemy := selected_enemy_scene.instantiate() as Node2D
 
 	if enemy == null:
-		push_warning("%s: enemy_scene no instancia un Node2D." % name)
+		push_warning("%s: la escena de enemigo no instancia un Node2D." % name)
 		return
 
 	var enemies_container := get_node_or_null("Enemies") as Node2D
 
 	if enemies_container == null:
-		# Fallback para no romper una sala si olvidamos crear el contenedor.
 		enemies_container = self
 
 	enemies_container.add_child(enemy)
@@ -126,9 +145,59 @@ func spawn_enemy_at(spawn_position: Vector2) -> void:
 
 	alive_enemies += 1
 
-	# Cuenta como eliminado cuando sale del árbol.
-	# Normalmente ocurre al morir con queue_free().
 	enemy.tree_exited.connect(_on_enemy_removed)
+
+
+func pick_enemy_scene() -> PackedScene:
+	# Si no hay pool, usamos el enemigo único configurado.
+	if enemy_scenes.is_empty():
+		return enemy_scene
+
+	var available_scenes: Array[PackedScene] = get_enemy_pool_for_difficulty()
+
+	if available_scenes.is_empty():
+		return enemy_scene
+
+	var random_index: int = randi_range(0, available_scenes.size() - 1)
+	return available_scenes[random_index]
+
+
+func get_enemy_pool_for_difficulty() -> Array[PackedScene]:
+	# Regla simple:
+	#
+	# Dificultad 1:
+	# - usa solo el primer enemigo del array.
+	#
+	# Dificultad 2:
+	# - usa los dos primeros enemigos.
+	#
+	# Dificultad 3+:
+	# - usa todos los enemigos del array.
+	#
+	# Esto depende del orden que pongas en el inspector:
+	# 0 = grunt
+	# 1 = fast
+	# 2 = tank
+
+	var pool: Array[PackedScene] = []
+
+	if enemy_scenes.is_empty():
+		return pool
+
+	var max_index_exclusive: int = 1
+
+	if difficulty == 2:
+		max_index_exclusive = min(2, enemy_scenes.size())
+	elif difficulty >= 3:
+		max_index_exclusive = enemy_scenes.size()
+
+	for i in range(max_index_exclusive):
+		var scene: PackedScene = enemy_scenes[i]
+
+		if scene != null:
+			pool.append(scene)
+
+	return pool
 
 
 func setup_enemy(enemy: Node2D) -> void:
@@ -246,11 +315,8 @@ func spawn_clear_loot() -> void:
 
 	add_child(loot_item)
 
-	# De momento aparece en el centro de la sala.
-	# Más adelante podemos usar un Marker2D llamado LootSpawn.
 	loot_item.global_position = global_position
 
-	# Configuramos dinámicamente qué objeto representa este drop.
 	if loot_item.has_method("setup_item"):
 		loot_item.setup_item(item_id, display_name)
 
