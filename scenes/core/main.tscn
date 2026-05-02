@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://k0ueardwotbn" path="res://scripts/core/main.gd" id="1_jvmw0"]
 [ext_resource type="Script" uid="uid://sqom3s80cofr" path="res://scripts/world/map.gd" id="2_44pk5"]
 [ext_resource type="Script" uid="uid://blgin1xvnkgku" path="res://scripts/dungeon/dungeon_run_manager.gd" id="2_jpx65"]
-[ext_resource type="Script" uid="uid://cf0vgkly0p35" path="res://scripts/core/run_manager.gd" id="2_ocd3q"]
 [ext_resource type="Script" uid="uid://crtk6hemjhxki" path="res://scripts/dungeon/dungeon_manager.gd" id="3_fu2j5"]
 [ext_resource type="PackedScene" uid="uid://8h3i1lsxrk0d" path="res://scenes/player/Player.tscn" id="3_phv0v"]
 [ext_resource type="Script" uid="uid://c0ywgwmhc3p7k" path="res://scripts/player/player.gd" id="4_jpx65"]
@@ -29,9 +28,6 @@ combat_room_scene = ExtResource("5_5xrq8")
 boss_room_scene = ExtResource("6_kbh5f")
 
 [node name="RoomContainer" type="Node2D" parent="." unique_id=2099461507]
-
-[node name="RunManager" type="Node" parent="." unique_id=1068112698]
-script = ExtResource("2_ocd3q")
 
 [node name="Map" type="Node2D" parent="." unique_id=456897978]
 script = ExtResource("2_44pk5")

@@ -28,20 +28,19 @@ var equipped_weapon_name: String = "Sin arma"
 @export var map_half_size: Vector2 = Vector2(1200, 800)
 
 func _ready() -> void:
-	
 	# Marcamos este nodo como jugador para que puertas y otros sistemas
 	# puedan detectarlo sin depender solo del nombre del nodo.
 	add_to_group("player")
-	
+
 	# Conectamos señales internas de los componentes.
 	economy.economy_changed.connect(_on_economy_changed)
 	progression.progression_changed.connect(_on_progression_changed)
 	progression.level_up_requested.connect(_on_progression_level_up_requested)
 	progression.player_died.connect(_on_progression_player_died)
-	
-	# Aplicamos progresión meta antes de inicializar vida,
-	# para que la vida máxima aumentada se tenga en cuenta.
-	apply_meta_upgrades()
+
+	# Inicializamos vida/progresión base.
+	# Los bonuses permanentes del nuevo juego se aplicarán más adelante
+	# desde un sistema nuevo de mejoras permanentes.
 	progression.initialize()
 	
 	stats_changed.emit()
@@ -119,20 +118,10 @@ func apply_passive_effects(delta: float) -> void:
 	progression.apply_passive_effects(delta)
 
 func apply_meta_upgrades() -> void:
-	# Bonos iniciales según ahorro meta total.
-	var meta_savings: int = SaveManager.meta_savings
-	
-	if meta_savings >= 30:
-		progression.add_max_health(10.0)
-	
-	if meta_savings >= 75:
-		combat.add_damage(4.0)
-	
-	if meta_savings >= 150:
-		speed += 20.0
-	
-	if meta_savings >= 300:
-		combat.add_projectiles(1)
+	# Sistema antiguo del prototipo survivor-like.
+	# Ya no se usa en el nuevo roguelite dungeon crawler.
+	# Lo dejamos vacío temporalmente para evitar bonuses ocultos.
+	pass
 
 func apply_upgrade(upgrade_id: String) -> void:
 	# Aplica una mejora elegida en el menú de subida de nivel.
@@ -151,13 +140,15 @@ func apply_upgrade(upgrade_id: String) -> void:
 			progression.add_max_health(20.0, 20.0)
 		
 		"projectile":
-			combat.add_projectiles(1)
+			# Sistema antiguo eliminado.
+			pass
 		
 		"range":
 			combat.add_range(80.0)
 		
 		"aura":
-			combat.upgrade_aura()
+			# Sistema antiguo eliminado.
+			pass
 		
 		"internship":
 			economy.add_passive_coin_rate(1.0)
@@ -214,21 +205,12 @@ func die() -> void:
 	progression.die()
 
 func _draw() -> void:
-	draw_aura()
 	draw_melee_attack_debug()
 	draw_block_debug()
 	draw_player_body()
 	draw_health_bar()
 	draw_stamina_bar()
 	draw_xp_bar()
-
-func draw_aura() -> void:
-	# Dibuja el aura si está desbloqueada.
-	if combat.aura_level <= 0:
-		return
-	
-	draw_circle(Vector2.ZERO, combat.aura_radius, Color(0.55, 0.25, 1.0, 0.14))
-	draw_arc(Vector2.ZERO, combat.aura_radius, 0.0, TAU, 64, Color(0.7, 0.45, 1.0, 0.85), 2.0)
 	
 func draw_melee_attack_debug() -> void:
 	# Dibuja temporalmente el arco del ataque melee.
@@ -415,17 +397,8 @@ func get_passive_coin_per_second() -> float:
 func get_attack_damage() -> float:
 	return combat.attack_damage
 
-func get_projectile_count() -> int:
-	return combat.projectile_count
-
 func get_attack_range() -> float:
 	return combat.attack_range
-
-func get_aura_level() -> int:
-	return combat.aura_level
-
-func get_aura_damage_per_second() -> float:
-	return combat.aura_damage_per_second
 	
 func equip_weapon(item_id: String) -> void:
 	# Equipa un arma usando ItemDatabase.

@@ -1,17 +1,34 @@
 extends Node
 
 # SaveManager es Autoload.
-# Eso significa que existe globalmente como SaveManager
-# y se mantiene accesible desde cualquier escena.
+# Guarda el progreso persistente entre runs.
 
-# Archivo donde se guarda el progreso.
-# user:// apunta a una carpeta segura de datos del usuario.
 const SAVE_PATH := "user://save_game.json"
 
-# Ahorro meta antiguo.
-# De momento lo mantenemos para no romper HUD/StartScreen.
-# Más adelante lo eliminaremos del todo.
+
+# -------------------------------------------------------------------
+# LEGACY / SISTEMA ANTIGUO
+# -------------------------------------------------------------------
+
+# Sistema antiguo del prototipo survivor-like.
+# Se mantiene temporalmente para no romper scripts antiguos,
+# pero el nuevo juego NO debería usarlo.
 var meta_savings: int = 0
+
+
+func add_savings(amount: int) -> void:
+	# Sistema antiguo.
+	# No usar para el nuevo roguelite dungeon crawler.
+	if amount <= 0:
+		return
+	
+	meta_savings += amount
+	save_game()
+
+
+# -------------------------------------------------------------------
+# NUEVO SISTEMA PERSISTENTE
+# -------------------------------------------------------------------
 
 # Oro persistente del jugador.
 # Se consigue al completar mazmorras.
@@ -30,24 +47,51 @@ var persistent_inventory: Array[Dictionary] = []
 
 
 func _ready() -> void:
-	# Al arrancar el juego, cargamos el guardado.
 	load_game()
 
 
-func add_savings(amount: int) -> void:
-	# Sistema antiguo.
-	# Lo mantenemos temporalmente para compatibilidad.
+# -------------------------------------------------------------------
+# ORO PERSISTENTE
+# -------------------------------------------------------------------
+
+func add_gold(amount: int) -> void:
+	# Añade oro persistente y guarda.
+	# Este oro solo debería añadirse cuando el jugador gana la mazmorra.
+
 	if amount <= 0:
 		return
-	
-	meta_savings += amount
+
+	persistent_gold += amount
 	save_game()
 
+	print("Oro persistente añadido: ", amount, " | total: ", persistent_gold)
+
+
+func spend_gold(amount: int) -> bool:
+	# Intenta gastar oro persistente.
+	# Devuelve true si se ha podido pagar.
+
+	if amount <= 0:
+		return false
+
+	if persistent_gold < amount:
+		return false
+
+	persistent_gold -= amount
+	save_game()
+
+	print("Oro gastado: ", amount, " | restante: ", persistent_gold)
+
+	return true
+
+
+# -------------------------------------------------------------------
+# INVENTARIO PERSISTENTE
+# -------------------------------------------------------------------
 
 func add_inventory_item(item_id: String, display_name: String) -> void:
 	# Añade un item al inventario persistente y guarda.
-	# Permitimos duplicados porque más adelante puede tener sentido:
-	# dos espadas, dos armaduras, etc.
+	# Permitimos duplicados porque puede haber varias armas iguales.
 
 	if item_id.is_empty():
 		return
@@ -65,7 +109,7 @@ func add_inventory_item(item_id: String, display_name: String) -> void:
 
 func add_inventory_items(items: Array[Dictionary]) -> void:
 	# Añade varios items al inventario persistente.
-	# Esto se usará al ganar una run.
+	# Esto se usa al ganar una run.
 
 	if items.is_empty():
 		return
@@ -88,9 +132,10 @@ func add_inventory_items(items: Array[Dictionary]) -> void:
 
 	print("Inventario persistente actualizado. Total items: ", persistent_inventory.size())
 
+
 func remove_inventory_item_once(item_id: String) -> bool:
 	# Elimina una sola copia de un item del inventario persistente.
-	# Esto es importante porque podemos tener varias espadas iguales.
+	# Importante porque puede haber duplicados.
 
 	if item_id.is_empty():
 		return false
@@ -110,9 +155,10 @@ func remove_inventory_item_once(item_id: String) -> bool:
 
 	return false
 
+
 func get_inventory_text() -> String:
 	# Devuelve texto legible del inventario persistente.
-	# De momento sirve para debug.
+	# De momento sirve para mostrarlo en StartScreen.
 
 	if persistent_inventory.is_empty():
 		return "Inventario vacío."
@@ -126,12 +172,18 @@ func get_inventory_text() -> String:
 	return text
 
 
+# -------------------------------------------------------------------
+# GUARDADO / CARGA
+# -------------------------------------------------------------------
+
 func save_game() -> void:
-	# Datos que queremos persistir.
 	var data: Dictionary = {
+		# Legacy
 		"meta_savings": meta_savings,
-		"persistent_inventory": persistent_inventory,
-		"persistent_gold": persistent_gold
+
+		# Nuevo sistema
+		"persistent_gold": persistent_gold,
+		"persistent_inventory": persistent_inventory
 	}
 	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -144,45 +196,39 @@ func save_game() -> void:
 
 
 func load_game() -> void:
-	# Si no existe guardado, empezamos desde cero.
 	if not FileAccess.file_exists(SAVE_PATH):
-		meta_savings = 0
-		persistent_inventory.clear()
+		_reset_runtime_values()
 		return
 	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
 	
 	if file == null:
 		push_error("No se pudo abrir el archivo de guardado para leer.")
-		meta_savings = 0
-		persistent_inventory.clear()
+		_reset_runtime_values()
 		return
 	
 	var text: String = file.get_as_text()
 	var parsed: Variant = JSON.parse_string(text)
 	
 	if typeof(parsed) != TYPE_DICTIONARY:
-		# Si el archivo está corrupto o no tiene el formato esperado,
-		# reiniciamos el progreso para evitar errores.
-		meta_savings = 0
-		persistent_inventory.clear()
+		_reset_runtime_values()
 		return
 
 	var data: Dictionary = parsed
 
-	# Cargamos ahorro antiguo si existe.
+	# Legacy.
 	if data.has("meta_savings"):
 		meta_savings = int(data["meta_savings"])
 	else:
 		meta_savings = 0
-	
-	# Cargamos oro persistente si existe.
+
+	# Nuevo oro persistente.
 	if data.has("persistent_gold"):
 		persistent_gold = int(data["persistent_gold"])
 	else:
 		persistent_gold = 0
 
-	# Cargamos inventario persistente si existe.
+	# Nuevo inventario persistente.
 	persistent_inventory.clear()
 
 	if data.has("persistent_inventory") and typeof(data["persistent_inventory"]) == TYPE_ARRAY:
@@ -205,41 +251,19 @@ func load_game() -> void:
 			}
 
 			persistent_inventory.append(loaded_item)
-			
-func add_gold(amount: int) -> void:
-	# Añade oro persistente y guarda.
-	# Este oro solo debería añadirse cuando el jugador gana la mazmorra.
-
-	if amount <= 0:
-		return
-
-	persistent_gold += amount
-	save_game()
-
-	print("Oro persistente añadido: ", amount, " | total: ", persistent_gold)
-	
-func spend_gold(amount: int) -> bool:
-	# Intenta gastar oro persistente.
-	# Devuelve true si se ha podido pagar.
-
-	if amount <= 0:
-		return false
-
-	if persistent_gold < amount:
-		return false
-
-	persistent_gold -= amount
-	save_game()
-
-	print("Oro gastado: ", amount, " | restante: ", persistent_gold)
-
-	return true
 
 
 func reset_save() -> void:
 	# Resetea todo el progreso persistente.
+	# De momento también resetea meta_savings legacy.
+
+	_reset_runtime_values()
+	save_game()
+
+
+func _reset_runtime_values() -> void:
+	# Valores por defecto cuando no hay guardado o está corrupto.
 
 	meta_savings = 0
 	persistent_gold = 0
 	persistent_inventory.clear()
-	save_game()

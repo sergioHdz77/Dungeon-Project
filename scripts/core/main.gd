@@ -67,24 +67,18 @@ func _ready() -> void:
 
 func show_start_screen() -> void:
 	# Mostramos el menú inicial.
-	# Todavía usamos StartScreen antiguo, pero el texto ya muestra
-	# el inventario persistente del nuevo sistema roguelite.
+	# Ya no usamos datos antiguos de survivor-like.
+	# Ahora mostramos oro, inventario y arma que se equipará automáticamente.
 
 	if start_screen != null:
 		if start_screen.has_method("show_screen"):
 			var inventory_text: String = SaveManager.get_inventory_text()
-
-			var menu_text := ""
-			menu_text += "Nuevo modo: mazmorra roguelite.\n\n"
-			menu_text += "Oro: %s\n\n" % SaveManager.persistent_gold
-			menu_text += "Inventario persistente:\n"
-			menu_text += inventory_text
-			menu_text += "\nSistema de equipamiento pendiente."
+			var equipped_weapon_text: String = get_auto_equipped_weapon_text()
 
 			start_screen.show_screen(
-				0,
-				0,
-				menu_text
+				SaveManager.persistent_gold,
+				inventory_text,
+				equipped_weapon_text
 			)
 		else:
 			start_screen.visible = true
@@ -308,6 +302,22 @@ func _on_item_collected(item_id: String, display_name: String) -> void:
 	run_loot.append(item_data)
 
 	print("Loot de run añadido: ", display_name, " | id: ", item_id)
+	
+func get_auto_equipped_weapon_text() -> String:
+	# Devuelve el arma que se equipará automáticamente al empezar la run.
+	# De momento elegimos la primera arma encontrada en el inventario persistente.
+
+	for item_data: Dictionary in SaveManager.persistent_inventory:
+		var item_id: String = str(item_data.get("id", ""))
+
+		if item_id.is_empty():
+			continue
+
+		if ItemDatabase.is_weapon(item_id):
+			var weapon_name: String = ItemDatabase.get_item_name(item_id)
+			return "Arma: %s" % weapon_name
+
+	return "Arma: ninguna"
 	
 func equip_first_weapon_from_inventory() -> void:
 	# Equipamiento automático provisional.
