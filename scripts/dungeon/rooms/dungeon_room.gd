@@ -226,7 +226,7 @@ func spawn_clear_loot() -> void:
 	if loot_item_scene == null:
 		return
 
-	var item_data: Dictionary = ItemDatabase.get_random_loot_item()
+	var item_data: Dictionary = ItemDatabase.get_random_loot_item_for_difficulty(difficulty)
 
 	if item_data.is_empty():
 		push_warning("%s: ItemDatabase no devolvió loot válido." % name)
@@ -257,7 +257,7 @@ func spawn_clear_loot() -> void:
 	if loot_item.has_signal("collected"):
 		loot_item.collected.connect(_on_loot_item_collected)
 
-	print("Loot generado en ", name, ": ", display_name)
+	print("Loot generado en ", name, " dificultad ", difficulty, ": ", display_name)
 
 
 func _on_loot_item_collected(item_id: String, display_name: String) -> void:

@@ -12,28 +12,32 @@ const ITEMS: Dictionary = {
 		"id": "rusty_sword",
 		"name": "Espada oxidada",
 		"type": "weapon",
-		"attack_damage_bonus": 4.0
-	},
-
-	"iron_sword": {
-		"id": "iron_sword",
-		"name": "Espada de hierro",
-		"type": "weapon",
-		"attack_damage_bonus": 10.0
+		"attack_damage_bonus": 4.0,
+		"loot_tier": 1
 	},
 
 	"hunter_dagger": {
 		"id": "hunter_dagger",
 		"name": "Daga de cazador",
 		"type": "weapon",
-		"attack_damage_bonus": 6.0
+		"attack_damage_bonus": 6.0,
+		"loot_tier": 1
+	},
+
+	"iron_sword": {
+		"id": "iron_sword",
+		"name": "Espada de hierro",
+		"type": "weapon",
+		"attack_damage_bonus": 10.0,
+		"loot_tier": 2
 	},
 
 	"war_axe": {
 		"id": "war_axe",
 		"name": "Hacha de guerra",
 		"type": "weapon",
-		"attack_damage_bonus": 14.0
+		"attack_damage_bonus": 14.0,
+		"loot_tier": 3
 	},
 
 	# -------------------------
@@ -44,21 +48,24 @@ const ITEMS: Dictionary = {
 		"id": "worn_tunic",
 		"name": "Túnica gastada",
 		"type": "armor",
-		"damage_taken_multiplier": 0.95
+		"damage_taken_multiplier": 0.95,
+		"loot_tier": 1
 	},
 
 	"leather_armor": {
 		"id": "leather_armor",
 		"name": "Cota de cuero",
 		"type": "armor",
-		"damage_taken_multiplier": 0.85
+		"damage_taken_multiplier": 0.85,
+		"loot_tier": 2
 	},
 
 	"chainmail": {
 		"id": "chainmail",
 		"name": "Cota de malla",
 		"type": "armor",
-		"damage_taken_multiplier": 0.72
+		"damage_taken_multiplier": 0.72,
+		"loot_tier": 3
 	}
 }
 
@@ -88,6 +95,15 @@ static func get_item_type(item_id: String) -> String:
 	return str(item_data.get("type", ""))
 
 
+static func get_item_loot_tier(item_id: String) -> int:
+	var item_data: Dictionary = get_item(item_id)
+
+	if item_data.is_empty():
+		return 1
+
+	return int(item_data.get("loot_tier", 1))
+
+
 static func is_weapon(item_id: String) -> bool:
 	return get_item_type(item_id) == "weapon"
 
@@ -96,22 +112,40 @@ static func is_armor(item_id: String) -> bool:
 	return get_item_type(item_id) == "armor"
 
 
-static func get_all_loot_item_ids() -> Array[String]:
-	# Pool simple de loot.
-	# De momento todos los items pueden salir como recompensa del boss.
+static func get_loot_tiers_for_difficulty(difficulty: int) -> Array[int]:
+	# Define qué tiers pueden aparecer según dificultad.
+	#
+	# Dificultad 1: items básicos.
+	# Dificultad 2: items básicos y medios.
+	# Dificultad 3+: items medios y buenos.
 
+	if difficulty <= 1:
+		return [1]
+
+	if difficulty == 2:
+		return [1, 2]
+
+	return [2, 3]
+
+
+static func get_loot_item_ids_for_difficulty(difficulty: int) -> Array[String]:
+	var allowed_tiers: Array[int] = get_loot_tiers_for_difficulty(difficulty)
 	var item_ids: Array[String] = []
 
 	for raw_item_id: Variant in ITEMS.keys():
-		item_ids.append(str(raw_item_id))
+		var item_id: String = str(raw_item_id)
+		var item_tier: int = get_item_loot_tier(item_id)
+
+		if allowed_tiers.has(item_tier):
+			item_ids.append(item_id)
 
 	return item_ids
 
 
-static func get_random_loot_item() -> Dictionary:
-	# Devuelve un item aleatorio del pool simple.
+static func get_random_loot_item_for_difficulty(difficulty: int) -> Dictionary:
+	# Devuelve un item aleatorio filtrado por dificultad.
 
-	var item_ids: Array[String] = get_all_loot_item_ids()
+	var item_ids: Array[String] = get_loot_item_ids_for_difficulty(difficulty)
 
 	if item_ids.is_empty():
 		return {}
