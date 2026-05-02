@@ -14,12 +14,20 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 # Estado de la run actual.
 var run_active: bool = false
 
+# Dificultad elegida en el menú para empezar una cadena de mazmorras.
+var selected_starting_difficulty: int = 1
+
+# Dificultad actual dentro de la cadena.
+var current_difficulty: int = 1
+
+# Dificultad máxima seleccionable desde el menú.
+# Más adelante puede depender de progreso/desbloqueos.
+var max_starting_difficulty: int = 3
+
 # Loot conseguido durante la run actual.
 # Si el jugador gana, pasa al inventario persistente.
 # Si el jugador muere, se pierde.
 var run_loot: Array[Dictionary] = []
-
-var current_difficulty: int = 1
 
 func _ready() -> void:
 	randomize()
@@ -69,6 +77,9 @@ func connect_ui_signals() -> void:
 		if start_screen.has_signal("armor_selected"):
 			start_screen.armor_selected.connect(_on_armor_selected)
 
+		if start_screen.has_signal("difficulty_selected"):
+			start_screen.difficulty_selected.connect(_on_difficulty_selected)
+
 	if dungeon_complete_screen != null:
 		if dungeon_complete_screen.has_signal("return_home_pressed"):
 			dungeon_complete_screen.return_home_pressed.connect(_on_return_home_pressed)
@@ -108,7 +119,9 @@ func show_start_screen() -> void:
 				weapon_options,
 				selected_weapon_id,
 				armor_options,
-				selected_armor_id
+				selected_armor_id,
+				selected_starting_difficulty,
+				max_starting_difficulty
 			)
 		else:
 			start_screen.visible = true
@@ -147,9 +160,8 @@ func start_dungeon_run() -> void:
 	get_tree().paused = false
 	run_active = true
 
-	# La cadena de mazmorras empieza en dificultad 1.
-	# Más adelante esto vendrá de un selector de dificultad en el menú.
-	current_difficulty = 1
+	# La cadena de mazmorras empieza en la dificultad elegida.
+	current_difficulty = selected_starting_difficulty
 
 	# El loot temporal siempre empieza vacío al iniciar una cadena nueva.
 	run_loot.clear()
@@ -491,7 +503,8 @@ func update_hud() -> void:
 		hud.update_hud(
 			player,
 			0,
-			0
+			0,
+			current_difficulty
 		)
 
 
@@ -642,3 +655,13 @@ func get_equipped_weapon_menu_text(selected_weapon_id: String) -> String:
 	var weapon_name: String = ItemDatabase.get_item_name(selected_weapon_id)
 
 	return "Equipo para la próxima run:\nArma: %s" % weapon_name
+
+
+func _on_difficulty_selected(difficulty: int) -> void:
+	selected_starting_difficulty = clamp(
+		difficulty,
+		1,
+		max_starting_difficulty
+	)
+
+	show_start_screen()

@@ -8,6 +8,7 @@ extends CanvasLayer
 # para no tener que tocar Main todavía, pero ignora remaining_time y meta_savings.
 
 var title_label: Label = null
+var difficulty_label: Label = null
 var level_label: Label = null
 var kills_label: Label = null
 var run_gold_label: Label = null
@@ -41,7 +42,7 @@ func build_ui() -> void:
 	root.offset_left = 16
 	root.offset_top = 16
 	root.offset_right = 360
-	root.offset_bottom = 360
+	root.offset_bottom = 380
 	add_child(root)
 	
 	# Panel de fondo del HUD.
@@ -65,6 +66,10 @@ func build_ui() -> void:
 	title_label.text = "Dungeon Run"
 	title_label.add_theme_font_size_override("font_size", 20)
 	vbox.add_child(title_label)
+
+	difficulty_label = Label.new()
+	difficulty_label.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(difficulty_label)
 	
 	level_label = Label.new()
 	vbox.add_child(level_label)
@@ -112,7 +117,12 @@ func build_ui() -> void:
 	vbox.add_child(block_label)
 
 
-func update_hud(player: Node, _remaining_time: int, _meta_savings: int) -> void:
+func update_hud(
+	player: Node,
+	_remaining_time: int,
+	_meta_savings: int,
+	current_difficulty: int = 1
+) -> void:
 	# Seguridad: si la UI todavía no se ha construido, no actualizamos.
 	if health_bar == null or stamina_bar == null or xp_bar == null:
 		return
@@ -136,6 +146,8 @@ func update_hud(player: Node, _remaining_time: int, _meta_savings: int) -> void:
 	var damage: float = _get_float_from_player(player, "get_attack_damage", 0.0)
 	var weapon_name: String = _get_string_from_player(player, "get_equipped_weapon_name", "Sin arma")
 	var is_blocking: bool = _get_is_blocking(player)
+
+	difficulty_label.text = "Dificultad: %s" % current_difficulty
 	
 	level_label.text = "Nivel: %s" % level
 	kills_label.text = "Enemigos eliminados: %s" % kills

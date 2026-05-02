@@ -36,18 +36,18 @@ func build_ui() -> void:
 	overlay.add_child(center_container)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(680, 420)
+	panel.custom_minimum_size = Vector2(720, 520)
 	center_container.add_child(panel)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 28)
 	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_top", 28)
-	margin.add_theme_constant_override("margin_bottom", 28)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
 	panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 18)
+	vbox.add_theme_constant_override("separation", 14)
 	margin.add_child(vbox)
 
 	var title := Label.new()
@@ -56,20 +56,28 @@ func build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 30)
 	vbox.add_child(title)
 
+	# El texto largo va dentro de un scroll para que no empuje los botones.
+	var info_scroll := ScrollContainer.new()
+	info_scroll.custom_minimum_size = Vector2(640, 270)
+	info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	info_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	vbox.add_child(info_scroll)
+
 	info_label = Label.new()
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(info_label)
+	info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_scroll.add_child(info_label)
 
 	var return_button := Button.new()
 	return_button.text = "Volver a casa y asegurar recompensas"
-	return_button.custom_minimum_size = Vector2(440, 52)
+	return_button.custom_minimum_size = Vector2(460, 50)
 	return_button.pressed.connect(_on_return_button_pressed)
 	vbox.add_child(return_button)
 
 	var portal_button := Button.new()
 	portal_button.text = "Abrir portal a una mazmorra más difícil"
-	portal_button.custom_minimum_size = Vector2(440, 52)
+	portal_button.custom_minimum_size = Vector2(460, 50)
 	portal_button.pressed.connect(_on_portal_button_pressed)
 	vbox.add_child(portal_button)
 
@@ -83,7 +91,7 @@ func show_screen(
 	if loot_text.is_empty():
 		loot_text = "- Ninguno"
 
-	info_label.text = "Has completado la mazmorra de dificultad %s.\n\nRecompensas en riesgo:\nOro acumulado: %s\nLoot acumulado:\n%s\n\nPuedes volver a casa para guardar todo, o abrir un portal a dificultad %s.\nSi mueres después, perderás todo lo acumulado y el equipo equipado." % [
+	info_label.text = "Has completado la mazmorra de dificultad %s.\n\nRECOMPENSAS EN RIESGO\nOro acumulado: %s\nLoot acumulado:\n%s\n\nOPCIONES\nVolver a casa:\n- Guardas todo el loot acumulado.\n- Guardas todo el oro acumulado.\n- Conservas el equipo equipado.\n\nAbrir portal:\n- Entras en una mazmorra de dificultad %s.\n- Las recompensas serán mejores.\n- Nada se guarda todavía.\n- Si mueres, pierdes equipo equipado, loot acumulado y oro acumulado." % [
 		current_difficulty,
 		run_gold,
 		loot_text,

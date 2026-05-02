@@ -1,17 +1,19 @@
 extends CanvasLayer
 
 # Pantalla inicial del juego.
-# Muestra oro, inventario persistente y permite elegir equipo.
+# Muestra oro, inventario persistente, permite elegir equipo y dificultad inicial.
 
 signal start_pressed
 signal weapon_selected(item_id: String)
 signal armor_selected(item_id: String)
+signal difficulty_selected(difficulty: int)
 
 var overlay: Control = null
 var gold_label: Label = null
 var equipment_label: Label = null
 var inventory_label: Label = null
 
+var difficulty_option_button: OptionButton = null
 var weapon_option_button: OptionButton = null
 var armor_option_button: OptionButton = null
 
@@ -41,7 +43,7 @@ func build_ui() -> void:
 	overlay.add_child(center_container)
 	
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(700, 520)
+	panel.custom_minimum_size = Vector2(700, 580)
 	center_container.add_child(panel)
 	
 	var margin := MarginContainer.new()
@@ -76,7 +78,7 @@ func build_ui() -> void:
 	vbox.add_child(inventory_title)
 
 	var inventory_scroll := ScrollContainer.new()
-	inventory_scroll.custom_minimum_size = Vector2(620, 120)
+	inventory_scroll.custom_minimum_size = Vector2(620, 110)
 	inventory_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	inventory_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	vbox.add_child(inventory_scroll)
@@ -85,6 +87,16 @@ func build_ui() -> void:
 	inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inventory_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_scroll.add_child(inventory_label)
+
+	var difficulty_title := Label.new()
+	difficulty_title.text = "Dificultad inicial"
+	difficulty_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(difficulty_title)
+
+	difficulty_option_button = OptionButton.new()
+	difficulty_option_button.custom_minimum_size = Vector2(420, 38)
+	difficulty_option_button.item_selected.connect(_on_difficulty_option_selected)
+	vbox.add_child(difficulty_option_button)
 
 	var weapon_title := Label.new()
 	weapon_title.text = "Arma equipada"
@@ -120,16 +132,37 @@ func show_screen(
 	weapon_options: Array[Dictionary],
 	selected_weapon_id: String,
 	armor_options: Array[Dictionary],
-	selected_armor_id: String
+	selected_armor_id: String,
+	selected_difficulty: int,
+	max_starting_difficulty: int
 ) -> void:
 	gold_label.text = "Oro: %s" % gold
 	equipment_label.text = equipment_text
 	inventory_label.text = inventory_text
 
+	refresh_difficulty_options(selected_difficulty, max_starting_difficulty)
 	refresh_weapon_options(weapon_options, selected_weapon_id)
 	refresh_armor_options(armor_options, selected_armor_id)
 	
 	overlay.visible = true
+
+
+func refresh_difficulty_options(selected_difficulty: int, max_starting_difficulty: int) -> void:
+	difficulty_option_button.clear()
+
+	var safe_max_difficulty: int = max(1, max_starting_difficulty)
+	var selected_index: int = 0
+
+	for difficulty in range(1, safe_max_difficulty + 1):
+		var index: int = difficulty_option_button.item_count
+
+		difficulty_option_button.add_item("Dificultad %s" % difficulty)
+		difficulty_option_button.set_item_metadata(index, difficulty)
+
+		if difficulty == selected_difficulty:
+			selected_index = index
+
+	difficulty_option_button.select(selected_index)
 
 
 func refresh_weapon_options(weapon_options: Array[Dictionary], selected_weapon_id: String) -> void:
@@ -184,6 +217,11 @@ func refresh_armor_options(armor_options: Array[Dictionary], selected_armor_id: 
 
 func hide_screen() -> void:
 	overlay.visible = false
+
+
+func _on_difficulty_option_selected(index: int) -> void:
+	var difficulty: int = int(difficulty_option_button.get_item_metadata(index))
+	difficulty_selected.emit(difficulty)
 
 
 func _on_weapon_option_selected(index: int) -> void:
