@@ -9,6 +9,7 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 @onready var hud: Node = get_node_or_null("HUD")
 @onready var start_screen: Node = get_node_or_null("StartScreen")
 @onready var run_end_screen: Node = get_node_or_null("RunEndScreen")
+@onready var dungeon_complete_screen: Node = get_node_or_null("DungeonCompleteScreen")
 
 # Estado de la run actual.
 var run_active: bool = false
@@ -18,6 +19,7 @@ var run_active: bool = false
 # Si el jugador muere, se pierde.
 var run_loot: Array[Dictionary] = []
 
+var current_difficulty: int = 1
 
 func _ready() -> void:
 	randomize()
@@ -66,6 +68,13 @@ func connect_ui_signals() -> void:
 
 		if start_screen.has_signal("armor_selected"):
 			start_screen.armor_selected.connect(_on_armor_selected)
+
+	if dungeon_complete_screen != null:
+		if dungeon_complete_screen.has_signal("return_home_pressed"):
+			dungeon_complete_screen.return_home_pressed.connect(_on_return_home_pressed)
+
+		if dungeon_complete_screen.has_signal("open_portal_pressed"):
+			dungeon_complete_screen.open_portal_pressed.connect(_on_open_portal_pressed)
 
 	if run_end_screen != null:
 		if run_end_screen.has_signal("restart_pressed"):
@@ -121,6 +130,14 @@ func hide_start_screen() -> void:
 	else:
 		start_screen.visible = false
 
+func start_dungeon_at_current_difficulty() -> void:
+	if dungeon_manager != null:
+		if dungeon_manager.has_method("create_test_dungeon"):
+			dungeon_manager.create_test_dungeon(current_difficulty)
+
+	if dungeon_run_manager != null:
+		if dungeon_run_manager.has_method("start_run"):
+			dungeon_run_manager.start_run()
 
 # -------------------------------------------------------------------
 # INICIO DE RUN
@@ -130,22 +147,18 @@ func start_dungeon_run() -> void:
 	get_tree().paused = false
 	run_active = true
 
-	# El loot temporal siempre empieza vacío.
+	# La cadena de mazmorras empieza en dificultad 1.
+	# Más adelante esto vendrá de un selector de dificultad en el menú.
+	current_difficulty = 1
+
+	# El loot temporal siempre empieza vacío al iniciar una cadena nueva.
 	run_loot.clear()
 
 	# Equipamiento elegido desde el menú.
 	equip_selected_weapon_from_inventory()
 	equip_selected_armor_from_inventory()
-	
-	# Creamos la mazmorra actual.
-	if dungeon_manager != null:
-		if dungeon_manager.has_method("create_test_dungeon"):
-			dungeon_manager.create_test_dungeon()
 
-	# DungeonRunManager queda como punto futuro para dificultad, estado de run, etc.
-	if dungeon_run_manager != null:
-		if dungeon_run_manager.has_method("start_run"):
-			dungeon_run_manager.start_run()
+	start_dungeon_at_current_difficulty()
 
 	update_hud()
 
@@ -165,7 +178,61 @@ func _on_dungeon_completed() -> void:
 	if not run_active:
 		return
 
+	show_dungeon_complete_screen()
+
+func show_dungeon_complete_screen() -> void:
+	if dungeon_complete_screen == null:
+		# Fallback por seguridad.
+		finish_run(true)
+		return
+
+	var run_gold: int = get_run_gold()
+	var loot_text: String = get_run_loot_text()
+
+	if loot_text.is_empty():
+		loot_text = "- Ninguno"
+
+	if dungeon_complete_screen.has_method("show_screen"):
+		dungeon_complete_screen.show_screen(
+			current_difficulty,
+			current_difficulty + 1,
+			run_gold,
+			loot_text
+		)
+	else:
+		dungeon_complete_screen.visible = true
+
+	get_tree().paused = true
+
+
+func _on_return_home_pressed() -> void:
+	# El jugador decide asegurar lo conseguido.
+	# Ahora sí se guarda loot y oro persistente.
+
+	if dungeon_complete_screen != null:
+		if dungeon_complete_screen.has_method("hide_screen"):
+			dungeon_complete_screen.hide_screen()
+
 	finish_run(true)
+
+
+func _on_open_portal_pressed() -> void:
+	# El jugador decide arriesgar lo conseguido.
+	# No guardamos nada todavía.
+	# Subimos dificultad y generamos otra mazmorra.
+
+	if dungeon_complete_screen != null:
+		if dungeon_complete_screen.has_method("hide_screen"):
+			dungeon_complete_screen.hide_screen()
+
+	get_tree().paused = false
+
+	current_difficulty += 1
+
+	print("Abriendo portal a dificultad: ", current_difficulty)
+
+	start_dungeon_at_current_difficulty()
+	update_hud()
 
 
 func finish_run(victory: bool) -> void:
@@ -438,7 +505,10 @@ func get_run_gold() -> int:
 	return 0
 	
 func get_weapon_options_from_inventory() -> Array[Dictionary]:
-	var weapons: Array[Dictionary] = []
+	# Devuelve armas únicas para el desplegable.
+	# Si tienes 3 espadas iguales, aparece una vez como "Espada x3".
+
+	var weapon_counts: Dictionary = {}
 
 	for item_data: Dictionary in SaveManager.persistent_inventory:
 		var item_id: String = str(item_data.get("id", ""))
@@ -449,15 +519,28 @@ func get_weapon_options_from_inventory() -> Array[Dictionary]:
 		if not ItemDatabase.is_weapon(item_id):
 			continue
 
-		var weapon_data: Dictionary = {
-			"id": item_id,
-			"name": ItemDatabase.get_item_name(item_id)
-		}
+		if not weapon_counts.has(item_id):
+			weapon_counts[item_id] = 0
 
-		weapons.append(weapon_data)
+		weapon_counts[item_id] += 1
+
+	var weapons: Array[Dictionary] = []
+
+	for item_id: String in weapon_counts.keys():
+		var count: int = int(weapon_counts[item_id])
+		var item_name: String = ItemDatabase.get_item_name(item_id)
+
+		var display_name: String = "%s x%s" % [
+			item_name,
+			count
+		]
+
+		weapons.append({
+			"id": item_id,
+			"name": display_name
+		})
 
 	return weapons
-
 
 func get_valid_selected_weapon_id() -> String:
 	var selected_weapon_id: String = SaveManager.equipped_weapon_id
@@ -473,7 +556,10 @@ func get_valid_selected_weapon_id() -> String:
 	return ""
 	
 func get_armor_options_from_inventory() -> Array[Dictionary]:
-	var armors: Array[Dictionary] = []
+	# Devuelve armaduras únicas para el desplegable.
+	# Si tienes 3 cotas iguales, aparece una vez como "Cota x3".
+
+	var armor_counts: Dictionary = {}
 
 	for item_data: Dictionary in SaveManager.persistent_inventory:
 		var item_id: String = str(item_data.get("id", ""))
@@ -484,12 +570,26 @@ func get_armor_options_from_inventory() -> Array[Dictionary]:
 		if not ItemDatabase.is_armor(item_id):
 			continue
 
-		var armor_data: Dictionary = {
-			"id": item_id,
-			"name": ItemDatabase.get_item_name(item_id)
-		}
+		if not armor_counts.has(item_id):
+			armor_counts[item_id] = 0
 
-		armors.append(armor_data)
+		armor_counts[item_id] += 1
+
+	var armors: Array[Dictionary] = []
+
+	for item_id: String in armor_counts.keys():
+		var count: int = int(armor_counts[item_id])
+		var item_name: String = ItemDatabase.get_item_name(item_id)
+
+		var display_name: String = "%s x%s" % [
+			item_name,
+			count
+		]
+
+		armors.append({
+			"id": item_id,
+			"name": display_name
+		})
 
 	return armors
 

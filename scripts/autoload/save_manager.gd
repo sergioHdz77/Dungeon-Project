@@ -191,17 +191,44 @@ func remove_inventory_item_once(item_id: String) -> bool:
 
 
 func get_inventory_text() -> String:
-	# Devuelve texto legible del inventario persistente.
-	# De momento sirve para mostrarlo en StartScreen.
+	# Devuelve texto legible del inventario persistente agrupando duplicados.
+	# Internamente seguimos guardando cada item por separado,
+	# pero en el menú mostramos "Objeto xN".
 
 	if persistent_inventory.is_empty():
 		return "Inventario vacío."
 
-	var text: String = ""
+	var item_counts: Dictionary = {}
 
 	for item_data: Dictionary in persistent_inventory:
+		var item_id: String = str(item_data.get("id", ""))
 		var display_name: String = str(item_data.get("name", "Objeto desconocido"))
-		text += "- %s\n" % display_name
+
+		if item_id.is_empty():
+			continue
+
+		if not item_counts.has(item_id):
+			item_counts[item_id] = {
+				"name": display_name,
+				"count": 0
+			}
+
+		item_counts[item_id]["count"] += 1
+
+	var text: String = ""
+
+	for item_id: String in item_counts.keys():
+		var grouped_data: Dictionary = item_counts[item_id]
+		var display_name: String = str(grouped_data.get("name", "Objeto desconocido"))
+		var count: int = int(grouped_data.get("count", 1))
+
+		text += "- %s x%s\n" % [
+			display_name,
+			count
+		]
+
+	if text.is_empty():
+		return "Inventario vacío."
 
 	return text
 

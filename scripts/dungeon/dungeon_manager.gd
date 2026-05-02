@@ -20,17 +20,21 @@ signal item_collected(item_id: String, display_name: String)
 var current_room: Node2D = null
 var current_room_index: int = 0
 var room_sequence: Array[PackedScene] = []
-
+var current_difficulty: int = 1
 
 # -------------------------------------------------------------------
 # CREACIÓN DE MAZMORRA
 # -------------------------------------------------------------------
 
-func create_test_dungeon() -> void:
+func create_test_dungeon(difficulty: int = 1) -> void:
 	# Crea la mazmorra mínima actual.
 	# Aún no es procedural, pero ya representa el flujo base del MVP.
+	#
+	# difficulty afecta a los multiplicadores de enemigos y boss.
 
 	clear_rooms()
+
+	current_difficulty = max(1, difficulty)
 
 	room_sequence = [
 		start_room_scene,
@@ -41,7 +45,6 @@ func create_test_dungeon() -> void:
 
 	current_room_index = 0
 	load_current_room()
-
 
 func load_current_room() -> void:
 	clear_rooms()
@@ -90,9 +93,7 @@ func setup_current_room() -> void:
 
 
 func get_current_difficulty() -> int:
-	# Dificultad provisional.
-	# Más adelante vendrá del selector de mazmorra o del progreso del jugador.
-	return 1
+	return current_difficulty
 
 
 # -------------------------------------------------------------------
