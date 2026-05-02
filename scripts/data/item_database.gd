@@ -94,3 +94,29 @@ static func is_weapon(item_id: String) -> bool:
 
 static func is_armor(item_id: String) -> bool:
 	return get_item_type(item_id) == "armor"
+
+
+static func get_all_loot_item_ids() -> Array[String]:
+	# Pool simple de loot.
+	# De momento todos los items pueden salir como recompensa del boss.
+
+	var item_ids: Array[String] = []
+
+	for raw_item_id: Variant in ITEMS.keys():
+		item_ids.append(str(raw_item_id))
+
+	return item_ids
+
+
+static func get_random_loot_item() -> Dictionary:
+	# Devuelve un item aleatorio del pool simple.
+
+	var item_ids: Array[String] = get_all_loot_item_ids()
+
+	if item_ids.is_empty():
+		return {}
+
+	var random_index: int = randi_range(0, item_ids.size() - 1)
+	var selected_item_id: String = item_ids[random_index]
+
+	return get_item(selected_item_id)

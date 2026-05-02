@@ -8,7 +8,10 @@ signal weapon_selected(item_id: String)
 signal armor_selected(item_id: String)
 
 var overlay: Control = null
-var info_label: Label = null
+var gold_label: Label = null
+var equipment_label: Label = null
+var inventory_label: Label = null
+
 var weapon_option_button: OptionButton = null
 var armor_option_button: OptionButton = null
 
@@ -38,31 +41,50 @@ func build_ui() -> void:
 	overlay.add_child(center_container)
 	
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(680, 560)
+	panel.custom_minimum_size = Vector2(700, 520)
 	center_container.add_child(panel)
 	
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 28)
-	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_top", 28)
-	margin.add_theme_constant_override("margin_bottom", 28)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
 	panel.add_child(margin)
 	
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 10)
 	margin.add_child(vbox)
 	
 	var title := Label.new()
 	title.text = "Dungeon Roguelite"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_font_size_override("font_size", 28)
 	vbox.add_child(title)
 	
-	info_label = Label.new()
-	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(info_label)
+	gold_label = Label.new()
+	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(gold_label)
+
+	equipment_label = Label.new()
+	equipment_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	equipment_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(equipment_label)
+
+	var inventory_title := Label.new()
+	inventory_title.text = "Inventario persistente"
+	inventory_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(inventory_title)
+
+	var inventory_scroll := ScrollContainer.new()
+	inventory_scroll.custom_minimum_size = Vector2(620, 120)
+	inventory_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	inventory_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	vbox.add_child(inventory_scroll)
+
+	inventory_label = Label.new()
+	inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inventory_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_scroll.add_child(inventory_label)
 
 	var weapon_title := Label.new()
 	weapon_title.text = "Arma equipada"
@@ -70,7 +92,7 @@ func build_ui() -> void:
 	vbox.add_child(weapon_title)
 
 	weapon_option_button = OptionButton.new()
-	weapon_option_button.custom_minimum_size = Vector2(380, 42)
+	weapon_option_button.custom_minimum_size = Vector2(420, 38)
 	weapon_option_button.item_selected.connect(_on_weapon_option_selected)
 	vbox.add_child(weapon_option_button)
 
@@ -80,13 +102,13 @@ func build_ui() -> void:
 	vbox.add_child(armor_title)
 
 	armor_option_button = OptionButton.new()
-	armor_option_button.custom_minimum_size = Vector2(380, 42)
+	armor_option_button.custom_minimum_size = Vector2(420, 38)
 	armor_option_button.item_selected.connect(_on_armor_option_selected)
 	vbox.add_child(armor_option_button)
 	
 	var start_button := Button.new()
 	start_button.text = "Entrar en la mazmorra"
-	start_button.custom_minimum_size = Vector2(380, 54)
+	start_button.custom_minimum_size = Vector2(420, 48)
 	start_button.pressed.connect(_on_start_button_pressed)
 	vbox.add_child(start_button)
 
@@ -100,11 +122,9 @@ func show_screen(
 	armor_options: Array[Dictionary],
 	selected_armor_id: String
 ) -> void:
-	info_label.text = "Oro: %s\n\nInventario persistente:\n%s\n\n%s" % [
-		gold,
-		inventory_text,
-		equipment_text
-	]
+	gold_label.text = "Oro: %s" % gold
+	equipment_label.text = equipment_text
+	inventory_label.text = inventory_text
 
 	refresh_weapon_options(weapon_options, selected_weapon_id)
 	refresh_armor_options(armor_options, selected_armor_id)

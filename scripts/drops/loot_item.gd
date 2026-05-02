@@ -23,6 +23,15 @@ func _ready() -> void:
 	queue_redraw()
 
 
+func setup_item(new_item_id: String, new_display_name: String) -> void:
+	# Permite que DungeonRoom configure dinámicamente qué item representa este drop.
+
+	item_id = new_item_id
+	display_name = new_display_name
+
+	queue_redraw()
+
+
 func _on_body_entered(body: Node) -> void:
 	# Solo el jugador puede recoger este loot.
 	if not body.is_in_group("player") and body.name != "Player":

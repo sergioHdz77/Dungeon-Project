@@ -1,5 +1,7 @@
 extends Node2D
 
+const ItemDatabase = preload("res://scripts/data/item_database.gd")
+
 # Sala base de mazmorra.
 #
 # Responsabilidades:
@@ -224,6 +226,19 @@ func spawn_clear_loot() -> void:
 	if loot_item_scene == null:
 		return
 
+	var item_data: Dictionary = ItemDatabase.get_random_loot_item()
+
+	if item_data.is_empty():
+		push_warning("%s: ItemDatabase no devolvió loot válido." % name)
+		return
+
+	var item_id: String = str(item_data.get("id", ""))
+	var display_name: String = str(item_data.get("name", "Objeto desconocido"))
+
+	if item_id.is_empty():
+		push_warning("%s: loot generado sin id." % name)
+		return
+
 	var loot_item := loot_item_scene.instantiate() as Node2D
 
 	if loot_item == null:
@@ -235,8 +250,14 @@ func spawn_clear_loot() -> void:
 	# Más adelante podemos usar un Marker2D llamado LootSpawn.
 	loot_item.global_position = global_position
 
+	# Configuramos dinámicamente qué objeto representa este drop.
+	if loot_item.has_method("setup_item"):
+		loot_item.setup_item(item_id, display_name)
+
 	if loot_item.has_signal("collected"):
 		loot_item.collected.connect(_on_loot_item_collected)
+
+	print("Loot generado en ", name, ": ", display_name)
 
 
 func _on_loot_item_collected(item_id: String, display_name: String) -> void:
