@@ -1,27 +1,24 @@
 extends CanvasLayer
 
 # Pantalla inicial del juego.
-# No inicia la run directamente.
-# Solo emite start_pressed y Main decide qué hacer.
+# Muestra oro, inventario persistente y permite elegir arma.
 
 signal start_pressed
+signal weapon_selected(item_id: String)
 
 var overlay: Control = null
 var info_label: Label = null
+var weapon_option_button: OptionButton = null
 
 
 func _ready() -> void:
-	# Capa alta para que aparezca por encima del juego y del HUD.
 	layer = 50
-	
-	# Debe funcionar aunque el árbol esté pausado.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	build_ui()
 
 
 func build_ui() -> void:
-	# Overlay completo de pantalla.
 	overlay = Control.new()
 	overlay.name = "StartOverlay"
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -29,20 +26,17 @@ func build_ui() -> void:
 	overlay.visible = false
 	add_child(overlay)
 	
-	# Fondo oscuro semitransparente.
 	var background := ColorRect.new()
 	background.color = Color(0, 0, 0, 0.78)
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(background)
 	
-	# Contenedor centrado.
 	var center_container := CenterContainer.new()
 	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(center_container)
 	
-	# Panel central.
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(620, 440)
+	panel.custom_minimum_size = Vector2(660, 500)
 	center_container.add_child(panel)
 	
 	var margin := MarginContainer.new()
@@ -67,6 +61,16 @@ func build_ui() -> void:
 	info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(info_label)
+
+	var weapon_title := Label.new()
+	weapon_title.text = "Arma equipada"
+	weapon_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(weapon_title)
+
+	weapon_option_button = OptionButton.new()
+	weapon_option_button.custom_minimum_size = Vector2(360, 42)
+	weapon_option_button.item_selected.connect(_on_weapon_option_selected)
+	vbox.add_child(weapon_option_button)
 	
 	var start_button := Button.new()
 	start_button.text = "Entrar en la mazmorra"
@@ -75,24 +79,58 @@ func build_ui() -> void:
 	vbox.add_child(start_button)
 
 
-func show_screen(gold: int, inventory_text: String, equipped_weapon_text: String) -> void:
-	# Main llama a esto para mostrar el estado persistente antes de empezar.
-	# Esta pantalla ya no usa duración, ahorro meta ni desbloqueos antiguos.
-
-	info_label.text = "Oro: %s\n\nInventario persistente:\n%s\n\nEquipo para la próxima run:\n%s" % [
+func show_screen(
+	gold: int,
+	inventory_text: String,
+	equipped_weapon_text: String,
+	weapon_options: Array[Dictionary],
+	selected_weapon_id: String
+) -> void:
+	info_label.text = "Oro: %s\n\nInventario persistente:\n%s\n\n%s" % [
 		gold,
 		inventory_text,
 		equipped_weapon_text
 	]
+
+	refresh_weapon_options(weapon_options, selected_weapon_id)
 	
 	overlay.visible = true
+
+
+func refresh_weapon_options(weapon_options: Array[Dictionary], selected_weapon_id: String) -> void:
+	weapon_option_button.clear()
+
+	# Opción para entrar sin arma.
+	weapon_option_button.add_item("Sin arma")
+	weapon_option_button.set_item_metadata(0, "")
+
+	var selected_index: int = 0
+
+	for weapon_data: Dictionary in weapon_options:
+		var item_id: String = str(weapon_data.get("id", ""))
+		var item_name: String = str(weapon_data.get("name", "Arma desconocida"))
+
+		if item_id.is_empty():
+			continue
+
+		var index: int = weapon_option_button.item_count
+		weapon_option_button.add_item(item_name)
+		weapon_option_button.set_item_metadata(index, item_id)
+
+		if item_id == selected_weapon_id:
+			selected_index = index
+
+	weapon_option_button.select(selected_index)
 
 
 func hide_screen() -> void:
 	overlay.visible = false
 
 
+func _on_weapon_option_selected(index: int) -> void:
+	var item_id: String = str(weapon_option_button.get_item_metadata(index))
+	weapon_selected.emit(item_id)
+
+
 func _on_start_button_pressed() -> void:
-	# La pantalla solo avisa.
-	# Main recibe la señal y arranca la run.
 	start_pressed.emit()

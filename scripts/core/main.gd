@@ -61,6 +61,9 @@ func connect_ui_signals() -> void:
 		if start_screen.has_signal("start_pressed"):
 			start_screen.start_pressed.connect(_on_start_button_pressed)
 
+		if start_screen.has_signal("weapon_selected"):
+			start_screen.weapon_selected.connect(_on_weapon_selected)
+
 	if run_end_screen != null:
 		if run_end_screen.has_signal("restart_pressed"):
 			run_end_screen.restart_pressed.connect(_on_restart_button_pressed)
@@ -74,18 +77,22 @@ func show_start_screen() -> void:
 	if start_screen != null:
 		if start_screen.has_method("show_screen"):
 			var inventory_text: String = SaveManager.get_inventory_text()
-			var equipped_weapon_text: String = get_auto_equipped_weapon_text()
+			var selected_weapon_id: String = get_valid_selected_weapon_id()
+			var equipped_weapon_text: String = get_equipped_weapon_menu_text(selected_weapon_id)
+			var weapon_options: Array[Dictionary] = get_weapon_options_from_inventory()
 
 			start_screen.show_screen(
 				SaveManager.persistent_gold,
 				inventory_text,
-				equipped_weapon_text
+				equipped_weapon_text,
+				weapon_options,
+				selected_weapon_id
 			)
 		else:
 			start_screen.visible = true
 
 	get_tree().paused = true
-
+	
 
 func _on_start_button_pressed() -> void:
 	hide_start_screen()
@@ -113,9 +120,8 @@ func start_dungeon_run() -> void:
 	# El loot temporal siempre empieza vacío.
 	run_loot.clear()
 
-	# Equipamiento automático provisional.
-	# Más adelante lo sustituiremos por una pantalla de equipamiento.
-	equip_first_weapon_from_inventory()
+	# Equipamiento elegido desde el menú.
+	equip_selected_weapon_from_inventory()
 
 	# Creamos la mazmorra actual.
 	if dungeon_manager != null:
@@ -301,25 +307,27 @@ func get_auto_equipped_weapon_text() -> String:
 	return "Arma: ninguna"
 
 
-func equip_first_weapon_from_inventory() -> void:
+func equip_selected_weapon_from_inventory() -> void:
 	if player == null:
 		return
 
 	if not player.has_method("equip_weapon"):
 		return
 
-	for item_data: Dictionary in SaveManager.persistent_inventory:
-		var item_id: String = str(item_data.get("id", ""))
+	var selected_weapon_id: String = get_valid_selected_weapon_id()
 
-		if item_id.is_empty():
-			continue
+	if selected_weapon_id.is_empty():
+		print("El jugador entra sin arma equipada.")
+		return
 
-		if ItemDatabase.is_weapon(item_id):
-			player.equip_weapon(item_id)
-			return
+	player.equip_weapon(selected_weapon_id)
 
-	print("No hay armas en el inventario persistente para equipar.")
+func _on_weapon_selected(item_id: String) -> void:
+	# Guarda el arma elegida desde el menú.
+	# Si item_id está vacío, el jugador entra sin arma.
 
+	SaveManager.set_equipped_weapon(item_id)
+	show_start_screen()
 
 func lose_equipped_items_on_death() -> String:
 	if player == null:
@@ -370,3 +378,59 @@ func get_run_gold() -> int:
 		return player.get_run_coins()
 
 	return 0
+	
+func get_weapon_options_from_inventory() -> Array[Dictionary]:
+	var weapons: Array[Dictionary] = []
+
+	for item_data: Dictionary in SaveManager.persistent_inventory:
+		var item_id: String = str(item_data.get("id", ""))
+
+		if item_id.is_empty():
+			continue
+
+		if not ItemDatabase.is_weapon(item_id):
+			continue
+
+		var weapon_data: Dictionary = {
+			"id": item_id,
+			"name": ItemDatabase.get_item_name(item_id)
+		}
+
+		weapons.append(weapon_data)
+
+	return weapons
+
+
+func get_valid_selected_weapon_id() -> String:
+	var selected_weapon_id: String = SaveManager.equipped_weapon_id
+
+	if selected_weapon_id.is_empty():
+		return ""
+
+	if inventory_contains_item_id(selected_weapon_id) and ItemDatabase.is_weapon(selected_weapon_id):
+		return selected_weapon_id
+
+	# Si el arma guardada ya no existe, limpiamos la selección.
+	SaveManager.clear_equipped_weapon()
+	return ""
+
+func inventory_contains_item_id(item_id: String) -> bool:
+	if item_id.is_empty():
+		return false
+
+	for item_data: Dictionary in SaveManager.persistent_inventory:
+		var current_id: String = str(item_data.get("id", ""))
+
+		if current_id == item_id:
+			return true
+
+	return false
+
+
+func get_equipped_weapon_menu_text(selected_weapon_id: String) -> String:
+	if selected_weapon_id.is_empty():
+		return "Equipo para la próxima run:\nArma: ninguna"
+
+	var weapon_name: String = ItemDatabase.get_item_name(selected_weapon_id)
+
+	return "Equipo para la próxima run:\nArma: %s" % weapon_name
