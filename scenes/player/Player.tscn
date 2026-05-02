@@ -55,3 +55,4 @@ script = ExtResource("3_4kuee")
 
 [node name="Progression" type="Node" parent="." unique_id=99627898]
 script = ExtResource("4_524rm")
+max_health = 900.0

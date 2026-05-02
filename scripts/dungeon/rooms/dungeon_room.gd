@@ -1,64 +1,91 @@
 extends Node2D
 
-# Script base para una sala de mazmorra.
+# Sala base de mazmorra.
 #
-# Ahora mismo hace 3 cosas:
-# - dibuja una sala rectangular provisional
-# - guarda si la sala tiene enemigos
-# - instancia enemigos en puntos fijos si existen
+# Responsabilidades:
+# - dibujar una sala placeholder
+# - bloquear/desbloquear puerta de salida
+# - generar enemigos en puntos fijos
+# - detectar cuándo la sala queda limpia
+# - soltar loot opcional al limpiarse
 
 signal room_cleared
 signal exit_requested
 signal item_collected(item_id: String, display_name: String)
 
+
+# -------------------------------------------------------------------
+# CONFIGURACIÓN VISUAL
+# -------------------------------------------------------------------
+
 @export var room_size: Vector2 = Vector2(720, 420)
 @export var floor_color: Color = Color(0.18, 0.18, 0.20)
 @export var border_color: Color = Color(0.55, 0.55, 0.60)
 
-# Escena de enemigo que usará esta sala.
-# En StartRoom lo dejamos vacío.
-# En CombatRoom asignaremos una escena de enemigo existente.
+
+# -------------------------------------------------------------------
+# ENEMIGOS
+# -------------------------------------------------------------------
+
+# En StartRoom se deja vacío.
+# En CombatRoom/BossRoom se asigna una escena de enemigo.
 @export var enemy_scene: PackedScene
 
-# Si está activo, esta sala soltará loot al limpiarse.
+
+# -------------------------------------------------------------------
+# LOOT
+# -------------------------------------------------------------------
+
+# Si está activo, la sala soltará loot al limpiarse.
+# De momento lo usamos para BossRoom.
 @export var drops_loot_on_clear: bool = false
 
 # Escena del loot que aparecerá al limpiar la sala.
 @export var loot_item_scene: PackedScene
 
+
+# -------------------------------------------------------------------
+# ESTADO INTERNO
+# -------------------------------------------------------------------
+
 var player: Node2D = null
 var difficulty: int = 1
 var alive_enemies: int = 0
-
 var room_is_cleared: bool = false
 
+
+# -------------------------------------------------------------------
+# SETUP DE SALA
+# -------------------------------------------------------------------
+
 func setup_room(new_player: Node2D, new_difficulty: int) -> void:
-	# DungeonManager llama a este método cuando carga la sala.
 	player = new_player
 	difficulty = new_difficulty
+
 	room_is_cleared = false
 	alive_enemies = 0
 
 	setup_exit_door()
 
-	# Si esta sala no tiene enemy_scene asignada, no genera enemigos.
-	# Esto permite que StartRoom sea una sala segura.
 	if enemy_scene == null:
+		# Sala segura sin enemigos, por ejemplo StartRoom.
 		mark_room_as_cleared()
 		return
 
 	spawn_enemies()
 
-	# Si por lo que sea no hay puntos de spawn o no se generó ningún enemigo,
-	# consideramos la sala limpia para no bloquear al jugador.
 	if alive_enemies <= 0:
+		# Si no se generó ningún enemigo, no bloqueamos al jugador.
 		mark_room_as_cleared()
 	else:
 		lock_exit_door()
 
+
+# -------------------------------------------------------------------
+# ENEMIGOS
+# -------------------------------------------------------------------
+
 func spawn_enemies() -> void:
-	# Buscamos un nodo llamado EnemySpawnPoints.
-	# Sus hijos serán Marker2D que indican dónde aparece cada enemigo.
 	var spawn_container := get_node_or_null("EnemySpawnPoints")
 
 	if spawn_container == null:
@@ -75,54 +102,52 @@ func spawn_enemies() -> void:
 
 
 func spawn_enemy_at(spawn_position: Vector2) -> void:
-	var enemy := enemy_scene.instantiate()
+	var enemy := enemy_scene.instantiate() as Node2D
 
 	if enemy == null:
+		push_warning("%s: enemy_scene no instancia un Node2D." % name)
 		return
 
-	# Añadimos el enemigo dentro de la propia sala.
-	# Así, si la sala se borra, sus enemigos también desaparecen.
 	var enemies_container := get_node_or_null("Enemies") as Node2D
 
 	if enemies_container == null:
-		# Fallback por seguridad.
-		# Si la sala no tiene nodo Enemies, el enemigo se añade directamente a la sala.
+		# Fallback para no romper una sala si olvidamos crear el contenedor.
 		enemies_container = self
 
 	enemies_container.add_child(enemy)
-
-	# Usamos global_position para que aparezca exactamente en el Marker2D.
 	enemy.global_position = spawn_position
 
-	# Lo metemos en el grupo enemies por si el enemigo antiguo no lo hacía.
 	if not enemy.is_in_group("enemies"):
 		enemy.add_to_group("enemies")
 
-	# El enemigo anterior usa setup así:
-	# setup(player, health_multiplier, speed_multiplier, damage_multiplier, reward_multiplier)
-	if enemy.has_method("setup"):
-		var health_multiplier := 1.0 + float(difficulty - 1) * 0.25
-		var speed_multiplier := 1.0 + float(difficulty - 1) * 0.10
-		var damage_multiplier := 1.0 + float(difficulty - 1) * 0.15
-		var reward_multiplier := 1.0 + float(difficulty - 1) * 0.20
-
-		enemy.setup(
-			player,
-			health_multiplier,
-			speed_multiplier,
-			damage_multiplier,
-			reward_multiplier
-		)
+	setup_enemy(enemy)
 
 	alive_enemies += 1
 
-	# Detectamos cuándo el enemigo sale de la escena.
+	# Cuenta como eliminado cuando sale del árbol.
+	# Normalmente ocurre al morir con queue_free().
 	enemy.tree_exited.connect(_on_enemy_removed)
 
-func _on_enemy_removed() -> void:
-	# Un enemigo de esta sala ha desaparecido.
-	# Normalmente significa que ha muerto.
 
+func setup_enemy(enemy: Node2D) -> void:
+	if not enemy.has_method("setup"):
+		return
+
+	var health_multiplier: float = 1.0 + float(difficulty - 1) * 0.25
+	var speed_multiplier: float = 1.0 + float(difficulty - 1) * 0.10
+	var damage_multiplier: float = 1.0 + float(difficulty - 1) * 0.15
+	var reward_multiplier: float = 1.0 + float(difficulty - 1) * 0.20
+
+	enemy.setup(
+		player,
+		health_multiplier,
+		speed_multiplier,
+		damage_multiplier,
+		reward_multiplier
+	)
+
+
+func _on_enemy_removed() -> void:
 	alive_enemies -= 1
 
 	print("Enemigo eliminado. Quedan: ", alive_enemies)
@@ -131,26 +156,17 @@ func _on_enemy_removed() -> void:
 		print("Sala limpiada: ", name)
 		mark_room_as_cleared()
 
-func _draw() -> void:
-	# Dibujamos el suelo de la sala centrado en el origen del nodo.
-	var rect := Rect2(
-		-room_size / 2.0,
-		room_size
-	)
 
-	draw_rect(rect, floor_color, true)
-	draw_rect(rect, border_color, false, 4.0)
-	
-	
+# -------------------------------------------------------------------
+# PUERTA DE SALIDA
+# -------------------------------------------------------------------
+
 func setup_exit_door() -> void:
-	# Busca una puerta llamada ExitDoor dentro de la sala.
 	var exit_door := get_node_or_null("ExitDoor")
 
 	if exit_door == null:
 		return
 
-	# Conectamos la señal de la puerta.
-	# Usamos Callable para evitar conexiones duplicadas.
 	var callback := Callable(self, "_on_exit_door_requested")
 
 	if exit_door.has_signal("exit_requested"):
@@ -177,10 +193,19 @@ func unlock_exit_door() -> void:
 	if exit_door.has_method("unlock"):
 		exit_door.unlock()
 
-func mark_room_as_cleared() -> void:
-	# La sala queda marcada como limpia.
-	# Esto puede generar loot, desbloquear la puerta y avisar al DungeonManager.
 
+func _on_exit_door_requested() -> void:
+	if not room_is_cleared:
+		return
+
+	exit_requested.emit()
+
+
+# -------------------------------------------------------------------
+# LIMPIEZA DE SALA / LOOT
+# -------------------------------------------------------------------
+
+func mark_room_as_cleared() -> void:
 	if room_is_cleared:
 		return
 
@@ -191,17 +216,8 @@ func mark_room_as_cleared() -> void:
 
 	room_cleared.emit()
 
-func _on_exit_door_requested() -> void:
-	# La puerta solo debería funcionar si la sala ya está limpia.
-	if not room_is_cleared:
-		return
-
-	exit_requested.emit()
 
 func spawn_clear_loot() -> void:
-	# Genera loot cuando la sala se limpia.
-	# De momento lo usaremos solo en BossRoom.
-
 	if not drops_loot_on_clear:
 		return
 
@@ -215,8 +231,8 @@ func spawn_clear_loot() -> void:
 
 	add_child(loot_item)
 
-	# Lo colocamos en el centro de la sala.
-	# Más adelante podremos usar un Marker2D específico.
+	# De momento aparece en el centro de la sala.
+	# Más adelante podemos usar un Marker2D llamado LootSpawn.
 	loot_item.global_position = global_position
 
 	if loot_item.has_signal("collected"):
@@ -224,5 +240,18 @@ func spawn_clear_loot() -> void:
 
 
 func _on_loot_item_collected(item_id: String, display_name: String) -> void:
-	# Reemitimos el loot hacia DungeonManager.
 	item_collected.emit(item_id, display_name)
+
+
+# -------------------------------------------------------------------
+# DIBUJO PLACEHOLDER
+# -------------------------------------------------------------------
+
+func _draw() -> void:
+	var rect := Rect2(
+		-room_size / 2.0,
+		room_size
+	)
+
+	draw_rect(rect, floor_color, true)
+	draw_rect(rect, border_color, false, 4.0)

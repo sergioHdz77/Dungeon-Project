@@ -2,21 +2,7 @@ extends Node2D
 
 const ItemDatabase = preload("res://scripts/data/item_database.gd")
 
-# Main sigue siendo el coordinador principal,
-# pero esta versión ya NO coordina el survivor-like antiguo.
-#
-# De momento solo hace esto:
-# - muestra pantalla inicial
-# - espera a que el jugador pulse empezar
-# - arranca una run de dungeon simple
-# - escucha si el jugador muere
-# - muestra pantalla final
-#
-# Todavía NO genera mazmorras.
-# Todavía NO gestiona loot.
-# Todavía NO guarda inventario.
-# Eso vendrá después.
-
+# Referencias principales de la escena.
 @onready var dungeon_manager: Node = get_node_or_null("DungeonManager")
 @onready var dungeon_run_manager: Node = get_node_or_null("DungeonRunManager")
 @onready var player: Node = get_node_or_null("Player")
@@ -24,52 +10,67 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 @onready var start_screen: Node = get_node_or_null("StartScreen")
 @onready var run_end_screen: Node = get_node_or_null("RunEndScreen")
 
+# Estado de la run actual.
 var run_active: bool = false
 
+# Loot conseguido durante la run actual.
+# Si el jugador gana, pasa al inventario persistente.
+# Si el jugador muere, se pierde.
 var run_loot: Array[Dictionary] = []
 
+
 func _ready() -> void:
-	# Inicializa la semilla aleatoria.
-	# Más adelante se usará para salas, loot y enemigos.
 	randomize()
 
-	# Señales del jugador.
-	# De momento solo nos interesa vida/muerte y refrescar HUD.
-	if player != null:
-		if player.has_signal("stats_changed"):
-			player.stats_changed.connect(update_hud)
-
-		if player.has_signal("player_died"):
-			player.player_died.connect(_on_player_died)
-			
-	# Señales del DungeonManager.
-	# Cuando la mazmorra termina, Main cierra la run como victoria.
-	if dungeon_manager != null:
-		if dungeon_manager.has_signal("dungeon_completed"):
-			dungeon_manager.dungeon_completed.connect(_on_dungeon_completed)
-
-		if dungeon_manager.has_signal("item_collected"):
-			dungeon_manager.item_collected.connect(_on_item_collected)
-			
-	# Pantalla inicial.
-	if start_screen != null:
-		if start_screen.has_signal("start_pressed"):
-			start_screen.start_pressed.connect(_on_start_button_pressed)
-
-	# Pantalla final.
-	if run_end_screen != null:
-		if run_end_screen.has_signal("restart_pressed"):
-			run_end_screen.restart_pressed.connect(_on_restart_button_pressed)
+	connect_player_signals()
+	connect_dungeon_signals()
+	connect_ui_signals()
 
 	update_hud()
 	show_start_screen()
 
 
-func show_start_screen() -> void:
-	# Mostramos el menú inicial.
-	# Ya no usamos datos antiguos de survivor-like.
-	# Ahora mostramos oro, inventario y arma que se equipará automáticamente.
+# -------------------------------------------------------------------
+# CONEXIÓN DE SEÑALES
+# -------------------------------------------------------------------
 
+func connect_player_signals() -> void:
+	if player == null:
+		return
+
+	if player.has_signal("stats_changed"):
+		player.stats_changed.connect(update_hud)
+
+	if player.has_signal("player_died"):
+		player.player_died.connect(_on_player_died)
+
+
+func connect_dungeon_signals() -> void:
+	if dungeon_manager == null:
+		return
+
+	if dungeon_manager.has_signal("dungeon_completed"):
+		dungeon_manager.dungeon_completed.connect(_on_dungeon_completed)
+
+	if dungeon_manager.has_signal("item_collected"):
+		dungeon_manager.item_collected.connect(_on_item_collected)
+
+
+func connect_ui_signals() -> void:
+	if start_screen != null:
+		if start_screen.has_signal("start_pressed"):
+			start_screen.start_pressed.connect(_on_start_button_pressed)
+
+	if run_end_screen != null:
+		if run_end_screen.has_signal("restart_pressed"):
+			run_end_screen.restart_pressed.connect(_on_restart_button_pressed)
+
+
+# -------------------------------------------------------------------
+# PANTALLA INICIAL
+# -------------------------------------------------------------------
+
+func show_start_screen() -> void:
 	if start_screen != null:
 		if start_screen.has_method("show_screen"):
 			var inventory_text: String = SaveManager.get_inventory_text()
@@ -83,38 +84,45 @@ func show_start_screen() -> void:
 		else:
 			start_screen.visible = true
 
-	# El juego queda pausado mientras estamos en el menú.
 	get_tree().paused = true
 
+
 func _on_start_button_pressed() -> void:
-	# El jugador pulsa empezar.
+	hide_start_screen()
+	start_dungeon_run()
 
-	if start_screen != null:
-		if start_screen.has_method("hide_screen"):
-			start_screen.hide_screen()
-		else:
-			start_screen.visible = false
 
-	# Activamos la partida.
+func hide_start_screen() -> void:
+	if start_screen == null:
+		return
+
+	if start_screen.has_method("hide_screen"):
+		start_screen.hide_screen()
+	else:
+		start_screen.visible = false
+
+
+# -------------------------------------------------------------------
+# INICIO DE RUN
+# -------------------------------------------------------------------
+
+func start_dungeon_run() -> void:
 	get_tree().paused = false
 	run_active = true
-	
-	# Limpiamos el loot temporal de la run anterior.
-	# El inventario persistente ya está en SaveManager.
+
+	# El loot temporal siempre empieza vacío.
 	run_loot.clear()
-	
-	# Equipamos automáticamente la primera arma disponible.
-	# Esto es provisional hasta tener pantalla de equipamiento.
+
+	# Equipamiento automático provisional.
+	# Más adelante lo sustituiremos por una pantalla de equipamiento.
 	equip_first_weapon_from_inventory()
-	
-	# Creamos la primera sala de la mazmorra.
-	# De momento solo existe una sala inicial estática.
+
+	# Creamos la mazmorra actual.
 	if dungeon_manager != null:
 		if dungeon_manager.has_method("create_test_dungeon"):
 			dungeon_manager.create_test_dungeon()
 
-	# Si DungeonRunManager ya existe y tiene start_run(),
-	# lo llamamos. Si aún está vacío, no pasa nada.
+	# DungeonRunManager queda como punto futuro para dificultad, estado de run, etc.
 	if dungeon_run_manager != null:
 		if dungeon_run_manager.has_method("start_run"):
 			dungeon_run_manager.start_run()
@@ -122,179 +130,150 @@ func _on_start_button_pressed() -> void:
 	update_hud()
 
 
-func _on_player_died() -> void:
-	# El jugador ha muerto.
-	# Ya no pasamos por RunManager porque RunManager era de tiempo/survivor-like.
+# -------------------------------------------------------------------
+# FINAL DE RUN
+# -------------------------------------------------------------------
 
+func _on_player_died() -> void:
 	if not run_active:
 		return
 
 	finish_run(false)
 
-func _on_dungeon_completed() -> void:
-	# La mazmorra se ha completado.
-	# De momento esto significa victoria directa.
-	# Más adelante solo se llamará después de matar al boss.
 
+func _on_dungeon_completed() -> void:
 	if not run_active:
 		return
 
 	finish_run(true)
 
-func finish_run(victory: bool) -> void:
-	# Cierra la run actual.
-	#
-	# Si ganas:
-	# - el loot de run pasa al inventario persistente.
-	# - las monedas de run pasan al oro persistente.
-	#
-	# Si mueres:
-	# - pierdes el arma equipada.
-	# - el loot de run se pierde.
-	# - las monedas de run se pierden.
-	#
-	# Todavía NO gestionamos armadura ni otros slots.
 
+func finish_run(victory: bool) -> void:
 	run_active = false
 
+	var run_gold: int = get_run_gold()
 	var lost_equipment_text: String = ""
-	var run_gold: int = 0
-
-	if player != null:
-		if player.has_method("get_run_coins"):
-			run_gold = player.get_run_coins()
 
 	if victory:
-		# Si gana, el loot de run pasa al inventario persistente.
-		if not run_loot.is_empty():
-			SaveManager.add_inventory_items(run_loot)
-
-			print("Inventario persistente actual:")
-			print(SaveManager.get_inventory_text())
-
-		# Si gana, también conserva las monedas recogidas durante la run.
-		if run_gold > 0:
-			SaveManager.add_gold(run_gold)
+		apply_victory_rewards(run_gold)
 	else:
-		# Si muere, pierde el equipo que llevaba equipado.
-		# El loot de run y las monedas de run no se guardan.
-		lost_equipment_text = lose_equipped_items_on_death()
+		lost_equipment_text = apply_death_penalties()
 
 	update_hud()
 
-	if run_end_screen != null:
-		if run_end_screen.has_method("show_screen"):
-			# Mantenemos la firma antigua de RunEndScreen para no rehacer la UI todavía.
-			#
-			# Parámetros antiguos:
-			# victory,
-			# elapsed_time,
-			# level,
-			# enemies_killed,
-			# xp_collected,
-			# coins_collected,
-			# secured_savings,
-			# meta_savings,
-			# upgrades_text
+	var result_text: String = build_run_result_text(
+		victory,
+		run_gold,
+		lost_equipment_text
+	)
 
-			var player_level: int = 1
-			var enemies_killed: int = 0
-			var xp_collected: int = 0
-			var coins_collected: int = 0
+	show_run_end_screen(victory, result_text)
 
-			if player != null:
-				if player.has_method("get_level"):
-					player_level = player.get_level()
-
-				if player.has_method("get_enemies_killed"):
-					enemies_killed = player.get_enemies_killed()
-
-				if player.has_method("get_total_xp_collected"):
-					xp_collected = player.get_total_xp_collected()
-
-				if player.has_method("get_total_coins_collected"):
-					coins_collected = player.get_total_coins_collected()
-
-			var result_text: String = ""
-
-			if victory:
-				result_text = "Mazmorra completada.\n\n"
-
-				result_text += "Oro conseguido: %s\n" % run_gold
-				result_text += "Oro total: %s\n\n" % SaveManager.persistent_gold
-
-				if run_loot.is_empty():
-					result_text += "No has conseguido loot."
-				else:
-					result_text += "Loot conseguido:\n"
-
-					for item_data: Dictionary in run_loot:
-						var item_name: String = str(item_data.get("name", "Objeto desconocido"))
-						result_text += "- %s\n" % item_name
-
-					result_text += "\nGuardado en inventario persistente."
-			else:
-				result_text = "Has muerto en la mazmorra.\n\n"
-
-				result_text += lost_equipment_text
-				result_text += "\n\nOro perdido: %s\n" % run_gold
-
-				result_text += "\nLoot perdido:\n"
-
-				if run_loot.is_empty():
-					result_text += "- Ninguno"
-				else:
-					for item_data: Dictionary in run_loot:
-						var item_name: String = str(item_data.get("name", "Objeto desconocido"))
-						result_text += "- %s\n" % item_name
-
-			run_end_screen.show_screen(
-				victory,
-				0,
-				player_level,
-				enemies_killed,
-				xp_collected,
-				coins_collected,
-				0,
-				0,
-				result_text
-			)
-		else:
-			run_end_screen.visible = true
-
-	# Pausamos en pantalla final.
 	get_tree().paused = true
 
-func _on_restart_button_pressed() -> void:
-	# Reinicia la escena actual.
-	# De momento es la forma más simple de empezar otra prueba limpia.
 
+func apply_victory_rewards(run_gold: int) -> void:
+	# Si gana, el loot de run pasa al inventario persistente.
+	if not run_loot.is_empty():
+		SaveManager.add_inventory_items(run_loot)
+
+		print("Inventario persistente actual:")
+		print(SaveManager.get_inventory_text())
+
+	# Si gana, también conserva las monedas recogidas durante la run.
+	if run_gold > 0:
+		SaveManager.add_gold(run_gold)
+
+
+func apply_death_penalties() -> String:
+	# Si muere:
+	# - pierde equipo equipado
+	# - pierde loot de run
+	# - pierde oro de run
+
+	return lose_equipped_items_on_death()
+
+
+func show_run_end_screen(victory: bool, result_text: String) -> void:
+	if run_end_screen == null:
+		return
+
+	if run_end_screen.has_method("show_screen"):
+		run_end_screen.show_screen(
+			victory,
+			result_text
+		)
+	else:
+		run_end_screen.visible = true
+
+
+func _on_restart_button_pressed() -> void:
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
 
-func update_hud() -> void:
-	# El HUD todavía es el antiguo.
-	# No lo reescribimos ahora.
-	# Simplemente le pasamos valores neutros donde antes esperaba tiempo y ahorro meta.
+# -------------------------------------------------------------------
+# TEXTO DE RESULTADO
+# -------------------------------------------------------------------
 
-	if hud == null:
-		return
+func build_run_result_text(
+	victory: bool,
+	run_gold: int,
+	lost_equipment_text: String
+) -> String:
+	if victory:
+		return build_victory_result_text(run_gold)
 
-	if hud.has_method("update_hud") and player != null:
-		hud.update_hud(
-			player,
-			0,
-			0
-		)
-		
+	return build_defeat_result_text(run_gold, lost_equipment_text)
+
+
+func build_victory_result_text(run_gold: int) -> String:
+	var result_text: String = ""
+
+	result_text += "Oro conseguido: %s\n" % run_gold
+	result_text += "Oro total: %s\n\n" % SaveManager.persistent_gold
+
+	if run_loot.is_empty():
+		result_text += "No has conseguido loot."
+	else:
+		result_text += "Loot conseguido:\n"
+		result_text += get_run_loot_text()
+		result_text += "\nGuardado en inventario persistente."
+
+	return result_text
+
+
+func build_defeat_result_text(run_gold: int, lost_equipment_text: String) -> String:
+	var result_text: String = ""
+
+	result_text += lost_equipment_text
+	result_text += "\n\nOro perdido: %s\n" % run_gold
+	result_text += "\nLoot perdido:\n"
+
+	if run_loot.is_empty():
+		result_text += "- Ninguno"
+	else:
+		result_text += get_run_loot_text()
+
+	return result_text
+
+
+func get_run_loot_text() -> String:
+	var text: String = ""
+
+	for item_data: Dictionary in run_loot:
+		var item_name: String = str(item_data.get("name", "Objeto desconocido"))
+		text += "- %s\n" % item_name
+
+	return text
+
+
+# -------------------------------------------------------------------
+# LOOT DE RUN
+# -------------------------------------------------------------------
+
 func _on_item_collected(item_id: String, display_name: String) -> void:
-	# Guardamos el loot conseguido durante esta run.
-	# Guardamos id + nombre:
-	# - id: sirve para inventario/equipamiento real
-	# - name: sirve para mostrar texto al jugador
-
-	var item_data := {
+	var item_data: Dictionary = {
 		"id": item_id,
 		"name": display_name
 	}
@@ -302,11 +281,13 @@ func _on_item_collected(item_id: String, display_name: String) -> void:
 	run_loot.append(item_data)
 
 	print("Loot de run añadido: ", display_name, " | id: ", item_id)
-	
-func get_auto_equipped_weapon_text() -> String:
-	# Devuelve el arma que se equipará automáticamente al empezar la run.
-	# De momento elegimos la primera arma encontrada en el inventario persistente.
 
+
+# -------------------------------------------------------------------
+# EQUIPAMIENTO PROVISIONAL
+# -------------------------------------------------------------------
+
+func get_auto_equipped_weapon_text() -> String:
 	for item_data: Dictionary in SaveManager.persistent_inventory:
 		var item_id: String = str(item_data.get("id", ""))
 
@@ -318,12 +299,9 @@ func get_auto_equipped_weapon_text() -> String:
 			return "Arma: %s" % weapon_name
 
 	return "Arma: ninguna"
-	
-func equip_first_weapon_from_inventory() -> void:
-	# Equipamiento automático provisional.
-	# Busca la primera arma del inventario persistente y se la equipa al jugador.
-	# Más adelante esto lo hará una pantalla de equipamiento real.
 
+
+func equip_first_weapon_from_inventory() -> void:
 	if player == null:
 		return
 
@@ -341,12 +319,9 @@ func equip_first_weapon_from_inventory() -> void:
 			return
 
 	print("No hay armas en el inventario persistente para equipar.")
-	
-func lose_equipped_items_on_death() -> String:
-	# Elimina del inventario persistente el equipo que el jugador llevaba equipado.
-	# De momento solo gestionamos arma.
-	# Más adelante añadiremos armadura y otros slots.
 
+
+func lose_equipped_items_on_death() -> String:
 	if player == null:
 		return "No había equipo equipado."
 
@@ -369,3 +344,29 @@ func lose_equipped_items_on_death() -> String:
 		return "Equipo perdido:\n- %s" % weapon_name
 
 	return "El arma equipada no estaba en el inventario persistente."
+
+
+# -------------------------------------------------------------------
+# HUD / DATOS DE RUN
+# -------------------------------------------------------------------
+
+func update_hud() -> void:
+	if hud == null:
+		return
+
+	if hud.has_method("update_hud") and player != null:
+		hud.update_hud(
+			player,
+			0,
+			0
+		)
+
+
+func get_run_gold() -> int:
+	if player == null:
+		return 0
+
+	if player.has_method("get_run_coins"):
+		return player.get_run_coins()
+
+	return 0
