@@ -13,6 +13,11 @@ const SAVE_PATH := "user://save_game.json"
 # Más adelante lo eliminaremos del todo.
 var meta_savings: int = 0
 
+# Oro persistente del jugador.
+# Se consigue al completar mazmorras.
+# Se gastará en mejoras permanentes desde el menú principal.
+var persistent_gold: int = 0
+
 # Inventario persistente del jugador.
 # Aquí se guardan los objetos que el jugador conserva al ganar una mazmorra.
 #
@@ -125,7 +130,8 @@ func save_game() -> void:
 	# Datos que queremos persistir.
 	var data: Dictionary = {
 		"meta_savings": meta_savings,
-		"persistent_inventory": persistent_inventory
+		"persistent_inventory": persistent_inventory,
+		"persistent_gold": persistent_gold
 	}
 	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -169,6 +175,12 @@ func load_game() -> void:
 		meta_savings = int(data["meta_savings"])
 	else:
 		meta_savings = 0
+	
+	# Cargamos oro persistente si existe.
+	if data.has("persistent_gold"):
+		persistent_gold = int(data["persistent_gold"])
+	else:
+		persistent_gold = 0
 
 	# Cargamos inventario persistente si existe.
 	persistent_inventory.clear()
@@ -193,12 +205,41 @@ func load_game() -> void:
 			}
 
 			persistent_inventory.append(loaded_item)
+			
+func add_gold(amount: int) -> void:
+	# Añade oro persistente y guarda.
+	# Este oro solo debería añadirse cuando el jugador gana la mazmorra.
+
+	if amount <= 0:
+		return
+
+	persistent_gold += amount
+	save_game()
+
+	print("Oro persistente añadido: ", amount, " | total: ", persistent_gold)
+	
+func spend_gold(amount: int) -> bool:
+	# Intenta gastar oro persistente.
+	# Devuelve true si se ha podido pagar.
+
+	if amount <= 0:
+		return false
+
+	if persistent_gold < amount:
+		return false
+
+	persistent_gold -= amount
+	save_game()
+
+	print("Oro gastado: ", amount, " | restante: ", persistent_gold)
+
+	return true
 
 
 func reset_save() -> void:
 	# Resetea todo el progreso persistente.
-	# Más adelante lo llamaremos desde un botón de menú.
 
 	meta_savings = 0
+	persistent_gold = 0
 	persistent_inventory.clear()
 	save_game()

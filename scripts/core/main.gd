@@ -76,6 +76,7 @@ func show_start_screen() -> void:
 
 			var menu_text := ""
 			menu_text += "Nuevo modo: mazmorra roguelite.\n\n"
+			menu_text += "Oro: %s\n\n" % SaveManager.persistent_gold
 			menu_text += "Inventario persistente:\n"
 			menu_text += inventory_text
 			menu_text += "\nSistema de equipamiento pendiente."
@@ -151,16 +152,23 @@ func finish_run(victory: bool) -> void:
 	#
 	# Si ganas:
 	# - el loot de run pasa al inventario persistente.
+	# - las monedas de run pasan al oro persistente.
 	#
 	# Si mueres:
 	# - pierdes el arma equipada.
 	# - el loot de run se pierde.
+	# - las monedas de run se pierden.
 	#
 	# Todavía NO gestionamos armadura ni otros slots.
 
 	run_active = false
 
 	var lost_equipment_text: String = ""
+	var run_gold: int = 0
+
+	if player != null:
+		if player.has_method("get_run_coins"):
+			run_gold = player.get_run_coins()
 
 	if victory:
 		# Si gana, el loot de run pasa al inventario persistente.
@@ -169,9 +177,13 @@ func finish_run(victory: bool) -> void:
 
 			print("Inventario persistente actual:")
 			print(SaveManager.get_inventory_text())
+
+		# Si gana, también conserva las monedas recogidas durante la run.
+		if run_gold > 0:
+			SaveManager.add_gold(run_gold)
 	else:
 		# Si muere, pierde el equipo que llevaba equipado.
-		# El loot de run no se guarda.
+		# El loot de run y las monedas de run no se guardan.
 		lost_equipment_text = lose_equipped_items_on_death()
 
 	update_hud()
@@ -212,10 +224,15 @@ func finish_run(victory: bool) -> void:
 			var result_text: String = ""
 
 			if victory:
+				result_text = "Mazmorra completada.\n\n"
+
+				result_text += "Oro conseguido: %s\n" % run_gold
+				result_text += "Oro total: %s\n\n" % SaveManager.persistent_gold
+
 				if run_loot.is_empty():
-					result_text = "Mazmorra completada.\nNo has conseguido loot."
+					result_text += "No has conseguido loot."
 				else:
-					result_text = "Mazmorra completada.\nLoot conseguido:\n"
+					result_text += "Loot conseguido:\n"
 
 					for item_data: Dictionary in run_loot:
 						var item_name: String = str(item_data.get("name", "Objeto desconocido"))
@@ -226,7 +243,9 @@ func finish_run(victory: bool) -> void:
 				result_text = "Has muerto en la mazmorra.\n\n"
 
 				result_text += lost_equipment_text
-				result_text += "\n\nLoot perdido:\n"
+				result_text += "\n\nOro perdido: %s\n" % run_gold
+
+				result_text += "\nLoot perdido:\n"
 
 				if run_loot.is_empty():
 					result_text += "- Ninguno"
