@@ -1,35 +1,64 @@
 extends Area2D
 
 # Puerta/salida de una sala.
-# De momento es una Area2D simple:
-# - si está bloqueada, no hace nada
-# - si está desbloqueada y el jugador entra, pide cambiar de sala
+#
+# Soporta:
+# - bloqueo/desbloqueo
+# - dirección lógica north/south/east/west
+# - activarse/desactivarse según conexiones del mapa procedural
 
 signal exit_requested
+signal directional_exit_requested(direction: String)
 
 @export var locked: bool = true
+
+@export_enum("north", "south", "east", "west") var direction: String = "east"
+
 @export var door_size: Vector2 = Vector2(80, 36)
 
 @export var unlocked_color: Color = Color(0.25, 0.65, 1.0, 0.85)
 @export var locked_color: Color = Color(0.45, 0.15, 0.15, 0.85)
 @export var border_color: Color = Color(0.95, 0.95, 0.95, 0.9)
 
+var exit_enabled: bool = true
+
 
 func _ready() -> void:
-	# La puerta debe estar por encima del suelo de la sala.
 	z_index = 30
 
-	# Detectamos cuando entra un cuerpo físico.
 	body_entered.connect(_on_body_entered)
 
+	apply_enabled_state()
 	queue_redraw()
 
 
-func set_locked(value: bool) -> void:
-	# Cambia el estado de la puerta.
-	# Si locked = true, la puerta se ve bloqueada y no permite salir.
-	# Si locked = false, la puerta permite avanzar.
+func set_exit_enabled(value: bool) -> void:
+	# Activa o desactiva completamente esta salida.
+	# Si está desactivada:
+	# - no se ve
+	# - no detecta al jugador
+	# - no emite señales
 
+	exit_enabled = value
+	apply_enabled_state()
+	queue_redraw()
+
+
+func apply_enabled_state() -> void:
+	visible = exit_enabled
+	monitoring = exit_enabled
+	monitorable = exit_enabled
+
+	for child in get_children():
+		var collision_shape := child as CollisionShape2D
+
+		if collision_shape == null:
+			continue
+
+		collision_shape.disabled = not exit_enabled
+
+
+func set_locked(value: bool) -> void:
 	locked = value
 	queue_redraw()
 
@@ -43,18 +72,22 @@ func lock() -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	# Si la puerta está bloqueada, no hace nada.
+	if not exit_enabled:
+		return
+
 	if locked:
 		return
 
-	# Solo el jugador puede activar la puerta.
-	if body.is_in_group("player") or body.name == "Player":
-		exit_requested.emit()
+	if not body.is_in_group("player") and body.name != "Player":
+		return
+
+	exit_requested.emit()
+	directional_exit_requested.emit(direction)
 
 
 func _draw() -> void:
-	# Dibujo provisional de la puerta.
-	# Más adelante lo sustituiremos por sprite o animación.
+	if not exit_enabled:
+		return
 
 	var current_color: Color = locked_color
 

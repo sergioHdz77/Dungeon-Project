@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="3_k02p6"]
 [ext_resource type="PackedScene" uid="uid://rpd5uj63mqxa" path="res://scenes/enemies/enemy_tank.tscn" id="4_fr2cp"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_fnekb"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_k02p6"]
 
 [node name="CombatRoom" type="Node2D" unique_id=573488946]
 script = ExtResource("1_lyfnc")
@@ -15,13 +15,6 @@ enemy_scenes = Array[PackedScene]([ExtResource("2_y1im1"), ExtResource("3_icnnh"
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1688751154]
 position = Vector2(0, 120)
-
-[node name="ExitDoor" type="Area2D" parent="." unique_id=547108838]
-position = Vector2(0, -190)
-script = ExtResource("3_k02p6")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitDoor" unique_id=1769014230]
-shape = SubResource("RectangleShape2D_fnekb")
 
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=2076010589]
 
@@ -36,3 +29,36 @@ position = Vector2(0, -160)
 
 [node name="Enemies" type="Node2D" parent="." unique_id=863592366]
 z_index = 10
+
+[node name="Doors" type="Node2D" parent="." unique_id=1980316790]
+
+[node name="NorthDoor" type="Area2D" parent="Doors" unique_id=232019509]
+position = Vector2(0, -210)
+script = ExtResource("3_k02p6")
+direction = "north"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/NorthDoor" unique_id=1100473540]
+shape = SubResource("RectangleShape2D_k02p6")
+
+[node name="SouthDoor" type="Area2D" parent="Doors" unique_id=2137577279]
+position = Vector2(0, 210)
+script = ExtResource("3_k02p6")
+direction = "south"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/SouthDoor" unique_id=1832862531]
+shape = SubResource("RectangleShape2D_k02p6")
+
+[node name="EastDoor" type="Area2D" parent="Doors" unique_id=20074668]
+position = Vector2(360, 0)
+script = ExtResource("3_k02p6")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=831874170]
+shape = SubResource("RectangleShape2D_k02p6")
+
+[node name="WestDoor" type="Area2D" parent="Doors" unique_id=1773660027]
+position = Vector2(-360, 0)
+script = ExtResource("3_k02p6")
+direction = "west"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/WestDoor" unique_id=1633129551]
+shape = SubResource("RectangleShape2D_k02p6")

@@ -35,11 +35,14 @@ combat_room_scenes = Array[PackedScene]([ExtResource("5_5xrq8"), ExtResource("7_
 
 [node name="Map" type="Node2D" parent="." unique_id=456897978]
 script = ExtResource("2_44pk5")
+map_size = Vector2(720, 420)
 
 [node name="Player" parent="." unique_id=1173866472 instance=ExtResource("3_phv0v")]
 script = ExtResource("4_jpx65")
 speed = 220.0
 map_half_size = Vector2(1200, 800)
+use_placeholder_drawing = true
+hurt_animation_duration = 0.15
 
 [node name="Camera2D" type="Camera2D" parent="Player" unique_id=1240053873]
 

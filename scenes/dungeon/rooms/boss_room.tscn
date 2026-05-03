@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cimcthdof1nfi" path="res://scenes/drops/loot_item.tscn" id="3_jyohm"]
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="3_trutp"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_lp04o"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_jyohm"]
 
 [node name="BossRoom" type="Node2D" unique_id=1574445617]
 script = ExtResource("1_0v6ad")
@@ -16,12 +16,6 @@ loot_item_scene = ExtResource("3_jyohm")
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1235231117]
 position = Vector2(0, 140)
 
-[node name="ExitDoor" type="Area2D" parent="." unique_id=1992732858]
-script = ExtResource("3_trutp")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitDoor" unique_id=374582625]
-shape = SubResource("RectangleShape2D_lp04o")
-
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=1048983806]
 position = Vector2(0, -100)
 
@@ -29,3 +23,36 @@ position = Vector2(0, -100)
 
 [node name="Enemies" type="Node2D" parent="." unique_id=176730896]
 z_index = 10
+
+[node name="Doors" type="Node2D" parent="." unique_id=407593867]
+
+[node name="NorthDoor" type="Area2D" parent="Doors" unique_id=1808557691]
+position = Vector2(0, -210)
+script = ExtResource("3_trutp")
+direction = "north"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/NorthDoor" unique_id=769398]
+shape = SubResource("RectangleShape2D_jyohm")
+
+[node name="SouthDoor" type="Area2D" parent="Doors" unique_id=1628279948]
+position = Vector2(0, 210)
+script = ExtResource("3_trutp")
+direction = "south"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/SouthDoor" unique_id=1780238670]
+shape = SubResource("RectangleShape2D_jyohm")
+
+[node name="EastDoor" type="Area2D" parent="Doors" unique_id=1664962919]
+position = Vector2(360, 0)
+script = ExtResource("3_trutp")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=1370139208]
+shape = SubResource("RectangleShape2D_jyohm")
+
+[node name="WestDoor" type="Area2D" parent="Doors" unique_id=1298544827]
+position = Vector2(-360, 0)
+script = ExtResource("3_trutp")
+direction = "west"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/WestDoor" unique_id=123869438]
+shape = SubResource("RectangleShape2D_jyohm")

@@ -3,16 +3,42 @@
 [ext_resource type="Script" uid="uid://vfl2byp8j7t5" path="res://scripts/dungeon/rooms/dungeon_room.gd" id="1_vwi7l"]
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="2_421mm"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_vwi7l"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_421mm"]
 
 [node name="StartRoom" type="Node2D" unique_id=1880824940]
 script = ExtResource("1_vwi7l")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1521212431]
 
-[node name="ExitDoor" type="Area2D" parent="." unique_id=242948260]
-position = Vector2(0, -190)
+[node name="Doors" type="Node2D" parent="." unique_id=1736277568]
+
+[node name="NorthDoor" type="Area2D" parent="Doors" unique_id=679331026]
+position = Vector2(0, -210)
+script = ExtResource("2_421mm")
+direction = "north"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/NorthDoor" unique_id=1173328294]
+shape = SubResource("RectangleShape2D_421mm")
+
+[node name="SouthDoor" type="Area2D" parent="Doors" unique_id=459663371]
+position = Vector2(0, 210)
+script = ExtResource("2_421mm")
+direction = "south"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/SouthDoor" unique_id=90956451]
+shape = SubResource("RectangleShape2D_421mm")
+
+[node name="EastDoor" type="Area2D" parent="Doors" unique_id=52213978]
+position = Vector2(360, 0)
 script = ExtResource("2_421mm")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitDoor" unique_id=1423328170]
-shape = SubResource("RectangleShape2D_vwi7l")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=1435180903]
+shape = SubResource("RectangleShape2D_421mm")
+
+[node name="WestDoor" type="Area2D" parent="Doors" unique_id=1891797407]
+position = Vector2(-360, 0)
+script = ExtResource("2_421mm")
+direction = "west"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/WestDoor" unique_id=1805913151]
+shape = SubResource("RectangleShape2D_421mm")

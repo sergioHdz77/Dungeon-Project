@@ -16,13 +16,6 @@ enemy_scenes = Array[PackedScene]([ExtResource("2_fnekb"), ExtResource("3_4imj3"
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1688751154]
 position = Vector2(0, 120)
 
-[node name="ExitDoor" type="Area2D" parent="." unique_id=547108838]
-position = Vector2(0, -190)
-script = ExtResource("3_fnekb")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitDoor" unique_id=1769014230]
-shape = SubResource("RectangleShape2D_fnekb")
-
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=2076010589]
 
 [node name="EnemySpawnPoint1" type="Marker2D" parent="EnemySpawnPoints" unique_id=918943993]
@@ -36,3 +29,36 @@ position = Vector2(0, -160)
 
 [node name="Enemies" type="Node2D" parent="." unique_id=863592366]
 z_index = 10
+
+[node name="Doors" type="Node2D" parent="." unique_id=1181510352]
+
+[node name="NorthDoor" type="Area2D" parent="Doors" unique_id=547108838]
+position = Vector2(0, -210)
+script = ExtResource("3_fnekb")
+direction = "north"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/NorthDoor" unique_id=1769014230]
+shape = SubResource("RectangleShape2D_fnekb")
+
+[node name="SouthDoor" type="Area2D" parent="Doors" unique_id=2066164385]
+position = Vector2(0, 210)
+script = ExtResource("3_fnekb")
+direction = "south"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/SouthDoor" unique_id=716286988]
+shape = SubResource("RectangleShape2D_fnekb")
+
+[node name="EastDoor" type="Area2D" parent="Doors" unique_id=2050829562]
+position = Vector2(360, 0)
+script = ExtResource("3_fnekb")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=1893381227]
+shape = SubResource("RectangleShape2D_fnekb")
+
+[node name="WestDoor" type="Area2D" parent="Doors" unique_id=1509567474]
+position = Vector2(-360, 0)
+script = ExtResource("3_fnekb")
+direction = "west"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/WestDoor" unique_id=1635258202]
+shape = SubResource("RectangleShape2D_fnekb")

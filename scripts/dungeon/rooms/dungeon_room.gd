@@ -6,14 +6,26 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 #
 # Responsabilidades:
 # - dibujar una sala placeholder
-# - bloquear/desbloquear puerta de salida
+# - bloquear/desbloquear puertas de salida
 # - generar enemigos en puntos fijos
-# - elegir tipos de enemigos según dificultad
+# - elegir enemigos según dificultad
 # - detectar cuándo la sala queda limpia
 # - soltar loot opcional al limpiarse
+#
+# Fase actual:
+# - mantiene exit_requested antiguo sin dirección
+# - añade directional_exit_requested(direction) para mapa procedural real
 
 signal room_cleared
+
+# Señal antigua.
+# Se mantiene temporalmente para no romper DungeonManager.
 signal exit_requested
+
+# Señal nueva.
+# Más adelante DungeonManager usará esta para cargar la sala conectada por dirección.
+signal directional_exit_requested(direction: String)
+
 signal item_collected(item_id: String, display_name: String)
 
 
@@ -64,14 +76,21 @@ var room_is_cleared: bool = false
 # SETUP DE SALA
 # -------------------------------------------------------------------
 
-func setup_room(new_player: Node2D, new_difficulty: int) -> void:
+func setup_room(new_player: Node2D, new_difficulty: int, already_cleared: bool = false) -> void:
 	player = new_player
 	difficulty = new_difficulty
 
 	room_is_cleared = false
 	alive_enemies = 0
 
-	setup_exit_door()
+	setup_exit_doors()
+
+	# Si esta sala ya estaba limpia, no volvemos a generar enemigos ni loot.
+	# Esto será importante al volver hacia atrás o entrar en ramas laterales.
+	if already_cleared:
+		room_is_cleared = true
+		unlock_exit_doors()
+		return
 
 	if not has_any_enemy_scene():
 		# Sala segura sin enemigos, por ejemplo StartRoom.
@@ -83,7 +102,7 @@ func setup_room(new_player: Node2D, new_difficulty: int) -> void:
 	if alive_enemies <= 0:
 		mark_room_as_cleared()
 	else:
-		lock_exit_door()
+		lock_exit_doors()
 
 
 func has_any_enemy_scene() -> bool:
@@ -149,7 +168,6 @@ func spawn_enemy_at(spawn_position: Vector2) -> void:
 
 
 func pick_enemy_scene() -> PackedScene:
-	# Si no hay pool, usamos el enemigo único configurado.
 	if enemy_scenes.is_empty():
 		return enemy_scene
 
@@ -163,22 +181,6 @@ func pick_enemy_scene() -> PackedScene:
 
 
 func get_enemy_pool_for_difficulty() -> Array[PackedScene]:
-	# Regla simple:
-	#
-	# Dificultad 1:
-	# - usa solo el primer enemigo del array.
-	#
-	# Dificultad 2:
-	# - usa los dos primeros enemigos.
-	#
-	# Dificultad 3+:
-	# - usa todos los enemigos del array.
-	#
-	# Esto depende del orden que pongas en el inspector:
-	# 0 = grunt
-	# 1 = fast
-	# 2 = tank
-
 	var pool: Array[PackedScene] = []
 
 	if enemy_scenes.is_empty():
@@ -229,45 +231,139 @@ func _on_enemy_removed() -> void:
 
 
 # -------------------------------------------------------------------
-# PUERTA DE SALIDA
+# PUERTAS DE SALIDA
 # -------------------------------------------------------------------
 
-func setup_exit_door() -> void:
-	var exit_door := get_node_or_null("ExitDoor")
+func configure_exit_doors_for_connections(connections: Dictionary, room_type: String = "") -> void:
+	# Activa solo las puertas que tienen conexión en el mapa procedural.
+	#a
+	# Excepción:
+	# - En BossRoom, permitimos siempre la salida east.
+	# - Esa puerta no conecta con otra sala.
+	# - DungeonManager interpreta east sin conexión como mazmorra completada.
 
+	var exit_doors: Array[Node] = get_exit_doors()
+
+	for exit_door in exit_doors:
+		if exit_door == null:
+			continue
+
+		var door_direction: String = get_exit_door_direction(exit_door)
+		var should_enable: bool = connections.has(door_direction)
+
+		# Salida final de BossRoom.
+		if room_type == "boss" and door_direction == "east":
+			should_enable = true
+
+		if exit_door.has_method("set_exit_enabled"):
+			exit_door.set_exit_enabled(should_enable)
+		else:
+			exit_door.visible = should_enable
+
+func setup_exit_doors() -> void:
+	var exit_doors: Array[Node] = get_exit_doors()
+
+	for exit_door in exit_doors:
+		setup_single_exit_door(exit_door)
+
+
+func setup_single_exit_door(exit_door: Node) -> void:
 	if exit_door == null:
 		return
 
-	var callback := Callable(self, "_on_exit_door_requested")
+	# Si la puerta ya tiene señal direccional, usamos esa.
+	# Esto evita duplicar eventos, porque room_exit.gd emite señal antigua y nueva.
+	if exit_door.has_signal("directional_exit_requested"):
+		var callback := Callable(self, "_on_directional_exit_door_requested")
 
+		if not exit_door.is_connected("directional_exit_requested", callback):
+			exit_door.connect("directional_exit_requested", callback)
+
+		return
+
+	# Fallback para puertas antiguas sin dirección.
 	if exit_door.has_signal("exit_requested"):
-		if not exit_door.exit_requested.is_connected(callback):
-			exit_door.exit_requested.connect(callback)
+		var legacy_callback := Callable(self, "_on_exit_door_requested")
+
+		if not exit_door.is_connected("exit_requested", legacy_callback):
+			exit_door.connect("exit_requested", legacy_callback)
 
 
-func lock_exit_door() -> void:
-	var exit_door := get_node_or_null("ExitDoor")
+func get_exit_doors() -> Array[Node]:
+	var exit_doors: Array[Node] = []
+
+	# Compatibilidad con la estructura antigua:
+	# DungeonRoom/ExitDoor
+	var single_exit := get_node_or_null("ExitDoor")
+
+	if single_exit != null:
+		exit_doors.append(single_exit)
+
+	# Estructura nueva:
+	# DungeonRoom/Doors/NorthDoor
+	# DungeonRoom/Doors/SouthDoor
+	# DungeonRoom/Doors/EastDoor
+	# DungeonRoom/Doors/WestDoor
+	var doors_container := get_node_or_null("Doors")
+
+	if doors_container != null:
+		for child in doors_container.get_children():
+			var child_node := child as Node
+
+			if child_node == null:
+				continue
+
+			if not exit_doors.has(child_node):
+				exit_doors.append(child_node)
+
+	return exit_doors
+
+func get_exit_door_direction(exit_door: Node) -> String:
+	# Lee la dirección exportada del RoomExit.
+	# Si no existe, usa "east" como fallback para compatibilidad.
 
 	if exit_door == null:
+		return "east"
+
+	if "direction" in exit_door:
+		return str(exit_door.direction)
+
+	return "east"
+
+func lock_exit_doors() -> void:
+	var exit_doors: Array[Node] = get_exit_doors()
+
+	for exit_door in exit_doors:
+		if exit_door.has_method("lock"):
+			exit_door.lock()
+
+
+func unlock_exit_doors() -> void:
+	var exit_doors: Array[Node] = get_exit_doors()
+
+	for exit_door in exit_doors:
+		if exit_door.has_method("unlock"):
+			exit_door.unlock()
+
+
+func _on_directional_exit_door_requested(direction: String) -> void:
+	if not room_is_cleared:
 		return
 
-	if exit_door.has_method("lock"):
-		exit_door.lock()
+	print("Salida direccional solicitada: ", direction)
 
+	# Señal nueva para el futuro sistema de grafo.
+	directional_exit_requested.emit(direction)
 
-func unlock_exit_door() -> void:
-	var exit_door := get_node_or_null("ExitDoor")
-
-	if exit_door == null:
-		return
-
-	if exit_door.has_method("unlock"):
-		exit_door.unlock()
+	# Señal antigua para que DungeonManager siga funcionando ahora mismo.
+	exit_requested.emit()
 
 
 func _on_exit_door_requested() -> void:
 	if not room_is_cleared:
 		return
+
+	print("Salida antigua solicitada sin dirección.")
 
 	exit_requested.emit()
 
@@ -283,7 +379,7 @@ func mark_room_as_cleared() -> void:
 	room_is_cleared = true
 
 	spawn_clear_loot()
-	unlock_exit_door()
+	unlock_exit_doors()
 
 	room_cleared.emit()
 
