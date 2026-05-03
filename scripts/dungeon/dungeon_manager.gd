@@ -1,17 +1,18 @@
 extends Node
 
-# Gestiona la secuencia de salas de la mazmorra.
+const DungeonMapGenerator = preload("res://scripts/dungeon/dungeon_map_generator.gd")
+
+# Gestiona el mapa procedural de la mazmorra.
 #
-# Generación procedural v1:
-# - siempre empieza con StartRoom
-# - genera un número variable de salas de combate según dificultad
-# - siempre termina con BossRoom
+# Fase actual:
+# - genera un mapa procedural como grafo de salas
+# - carga salas por room_id
+# - todavía solo avanza por la conexión "east"
 #
-# Más adelante podremos ampliar esto con:
-# - salas de loot
-# - salas élite
-# - ramificaciones
-# - mapa físico procedural
+# Siguiente fase:
+# - puertas con dirección north/south/east/west
+# - poder entrar en salas laterales
+# - recordar salas visitadas/limpiadas al volver
 
 signal dungeon_completed
 signal item_collected(item_id: String, display_name: String)
@@ -27,21 +28,17 @@ signal item_collected(item_id: String, display_name: String)
 # Si está vacío, usa combat_room_scene como fallback.
 @export var combat_room_scenes: Array[PackedScene] = []
 
-# Número base de salas de combate.
+# Estos valores siguen existiendo para mantener coherencia con la generación actual.
+# Ahora el número real de salas viene de DungeonMapGenerator.
 @export var base_combat_rooms: int = 2
-
-# Cada cuántas dificultades añadimos una sala extra.
-# Ejemplo: difficulty 1-2 = 2 salas, difficulty 3-4 = 3 salas.
 @export var difficulty_steps_per_extra_room: int = 2
-
-# Límite máximo para que la mazmorra no crezca demasiado.
 @export var max_combat_rooms: int = 6
 
 var current_room: Node2D = null
-var current_room_index: int = 0
-var room_sequence: Array[PackedScene] = []
+var current_room_id: String = ""
 
 var current_difficulty: int = 1
+var generated_map_data: Dictionary = {}
 
 
 # -------------------------------------------------------------------
@@ -50,7 +47,6 @@ var current_difficulty: int = 1
 
 func create_test_dungeon(difficulty: int = 1) -> void:
 	# Mantengo este método por compatibilidad con Main.gd.
-	# Internamente ya llama al generador procedural.
 	create_dungeon(difficulty)
 
 
@@ -59,85 +55,125 @@ func create_dungeon(difficulty: int = 1) -> void:
 
 	current_difficulty = max(1, difficulty)
 
-	room_sequence = generate_room_sequence(current_difficulty)
+	# Generamos mapa procedural real como datos.
+	generated_map_data = DungeonMapGenerator.generate_map(current_difficulty)
+	DungeonMapGenerator.print_map(generated_map_data)
 
-	current_room_index = 0
-	load_current_room()
+	# Asignamos una escena real a cada sala del mapa.
+	# Esto evita que una sala de combate cambie de variante si se vuelve a cargar.
+	assign_scenes_to_generated_map()
 
-	print("Mazmorra generada. Dificultad: ", current_difficulty, " | Salas: ", room_sequence.size())
+	debug_print_room_scene_mapping(generated_map_data)
 
+	current_room_id = str(generated_map_data.get("start_room_id", ""))
 
-func generate_room_sequence(difficulty: int) -> Array[PackedScene]:
-	var sequence: Array[PackedScene] = []
+	if current_room_id.is_empty():
+		push_warning("DungeonManager: el mapa generado no tiene start_room_id.")
+		return
 
-	if start_room_scene != null:
-		sequence.append(start_room_scene)
-	else:
-		push_warning("DungeonManager: falta start_room_scene.")
+	load_room_by_id(current_room_id)
 
-	var combat_room_count: int = get_combat_room_count_for_difficulty(difficulty)
-
-	for i in range(combat_room_count):
-		var combat_scene: PackedScene = pick_combat_room_scene()
-
-		if combat_scene != null:
-			sequence.append(combat_scene)
-		else:
-			push_warning("DungeonManager: no hay escena de combate disponible.")
-
-	if boss_room_scene != null:
-		sequence.append(boss_room_scene)
-	else:
-		push_warning("DungeonManager: falta boss_room_scene.")
-
-	return sequence
-
-
-func get_combat_room_count_for_difficulty(difficulty: int) -> int:
-	# Dificultad 1-2: base_combat_rooms
-	# Dificultad 3-4: base + 1
-	# Dificultad 5-6: base + 2
-	# etc.
-
-	var safe_step: int = max(1, difficulty_steps_per_extra_room)
-	var extra_rooms: int = int(floor(float(max(0, difficulty - 1)) / float(safe_step)))
-
-	var total_rooms: int = base_combat_rooms + extra_rooms
-
-	return clamp(
-		total_rooms,
-		1,
-		max_combat_rooms
+	print(
+		"Mazmorra procedural cargada. Dificultad: ",
+		current_difficulty,
+		" | Start room: ",
+		current_room_id
 	)
 
 
+func assign_scenes_to_generated_map() -> void:
+	var rooms: Dictionary = generated_map_data.get("rooms", {})
+
+	for room_id in rooms.keys():
+		var room_data: Dictionary = rooms[room_id]
+		var scene: PackedScene = get_room_scene_for_room_data(room_data)
+
+		room_data["scene"] = scene
+		rooms[room_id] = room_data
+
+	generated_map_data["rooms"] = rooms
+
+
+func get_room_scene_for_room_data(room_data: Dictionary) -> PackedScene:
+	var room_type: String = str(room_data.get("type", ""))
+
+	match room_type:
+		"start":
+			return start_room_scene
+
+		"combat":
+			return pick_combat_room_scene()
+
+		"boss":
+			return boss_room_scene
+
+		_:
+			push_warning("DungeonManager: tipo de sala desconocido: %s" % room_type)
+			return null
+
+
 func pick_combat_room_scene() -> PackedScene:
-	# Si hay variantes, elegimos una aleatoria.
 	if not combat_room_scenes.is_empty():
 		var random_index: int = randi_range(0, combat_room_scenes.size() - 1)
 		return combat_room_scenes[random_index]
 
-	# Fallback: usa la sala de combate única actual.
 	return combat_room_scene
 
 
-func load_current_room() -> void:
+func debug_print_room_scene_mapping(map_data: Dictionary) -> void:
+	var rooms: Dictionary = map_data.get("rooms", {})
+
+	print("")
+	print("========== ROOM SCENE MAPPING DEBUG ==========")
+
+	for room_id in rooms.keys():
+		var room_data: Dictionary = rooms[room_id]
+		var room_type: String = str(room_data.get("type", "unknown"))
+		var scene: PackedScene = room_data.get("scene", null) as PackedScene
+
+		var scene_path: String = "NULL"
+
+		if scene != null:
+			if not scene.resource_path.is_empty():
+				scene_path = scene.resource_path
+			else:
+				scene_path = "PackedScene sin resource_path"
+
+		print(
+			room_id,
+			" | type: ",
+			room_type,
+			" | scene: ",
+			scene_path
+		)
+
+	print("==============================================")
+	print("")
+
+
+# -------------------------------------------------------------------
+# CARGA DE SALAS POR ROOM_ID
+# -------------------------------------------------------------------
+
+func load_room_by_id(room_id: String) -> void:
 	clear_rooms()
 
-	if not is_current_room_index_valid():
-		push_warning("DungeonManager: índice de sala fuera de rango.")
+	var room_data: Dictionary = get_room_data(room_id)
+
+	if room_data.is_empty():
+		push_warning("DungeonManager: no existe room_id: %s" % room_id)
 		return
 
-	var room_scene: PackedScene = room_sequence[current_room_index]
+	var room_scene: PackedScene = get_scene_for_room_data(room_data)
 
 	if room_scene == null:
-		push_warning("DungeonManager: falta asignar una escena de sala.")
+		push_warning("DungeonManager: la sala no tiene escena asignada: %s" % room_id)
 		return
 
 	current_room = room_scene.instantiate() as Node2D
 
 	if current_room == null:
-		push_warning("DungeonManager: la escena de sala no es Node2D.")
+		push_warning("DungeonManager: la escena de sala no instancia Node2D.")
 		return
 
 	if room_container == null:
@@ -145,28 +181,35 @@ func load_current_room() -> void:
 		return
 
 	room_container.add_child(current_room)
-
-	# De momento todas las salas se colocan en el centro.
 	current_room.global_position = Vector2.ZERO
 
+	current_room_id = room_id
+
+	mark_room_as_visited(room_id)
 	connect_current_room_signals()
 	move_player_to_room_spawn(current_room)
 	setup_current_room()
 
-	print(
-		"Sala cargada: ",
-		current_room.name,
-		" | Índice: ",
-		current_room_index + 1,
-		"/",
-		room_sequence.size(),
-		" | Dificultad: ",
-		current_difficulty
-	)
+	print_loaded_room_debug(room_id, room_data)
 
 
-func is_current_room_index_valid() -> bool:
-	return current_room_index >= 0 and current_room_index < room_sequence.size()
+func get_room_data(room_id: String) -> Dictionary:
+	var rooms: Dictionary = generated_map_data.get("rooms", {})
+
+	if not rooms.has(room_id):
+		return {}
+
+	return rooms[room_id]
+
+
+func get_scene_for_room_data(room_data: Dictionary) -> PackedScene:
+	var scene: PackedScene = room_data.get("scene", null) as PackedScene
+
+	if scene != null:
+		return scene
+
+	# Fallback por seguridad si alguna sala no tiene scene precalculada.
+	return get_room_scene_for_room_data(room_data)
 
 
 func setup_current_room() -> void:
@@ -174,33 +217,7 @@ func setup_current_room() -> void:
 		return
 
 	if current_room.has_method("setup_room"):
-		current_room.setup_room(player, get_current_difficulty())
-
-
-func get_current_difficulty() -> int:
-	return current_difficulty
-
-
-# -------------------------------------------------------------------
-# CAMBIO DE SALA
-# -------------------------------------------------------------------
-
-func go_to_next_room() -> void:
-	if room_sequence.is_empty():
-		return
-
-	current_room_index += 1
-
-	if current_room_index >= room_sequence.size():
-		complete_dungeon()
-		return
-
-	load_current_room()
-
-
-func complete_dungeon() -> void:
-	print("Mazmorra completada.")
-	dungeon_completed.emit()
+		current_room.setup_room(player, current_difficulty)
 
 
 func move_player_to_room_spawn(room: Node2D) -> void:
@@ -228,6 +245,93 @@ func clear_rooms() -> void:
 	current_room = null
 
 
+func print_loaded_room_debug(room_id: String, room_data: Dictionary) -> void:
+	var room_type: String = str(room_data.get("type", "unknown"))
+	var grid_position: Vector2i = room_data.get("grid_position", Vector2i.ZERO)
+	var connections: Dictionary = room_data.get("connections", {})
+
+	print(
+		"Sala cargada por room_id: ",
+		room_id,
+		" | type: ",
+		room_type,
+		" | pos: ",
+		grid_position,
+		" | connections: ",
+		connections,
+		" | dificultad: ",
+		current_difficulty
+	)
+
+
+# -------------------------------------------------------------------
+# ESTADO DE SALAS
+# -------------------------------------------------------------------
+
+func mark_room_as_visited(room_id: String) -> void:
+	var rooms: Dictionary = generated_map_data.get("rooms", {})
+
+	if not rooms.has(room_id):
+		return
+
+	var room_data: Dictionary = rooms[room_id]
+	room_data["is_visited"] = true
+	rooms[room_id] = room_data
+	generated_map_data["rooms"] = rooms
+
+
+func mark_current_room_as_cleared() -> void:
+	if current_room_id.is_empty():
+		return
+
+	var rooms: Dictionary = generated_map_data.get("rooms", {})
+
+	if not rooms.has(current_room_id):
+		return
+
+	var room_data: Dictionary = rooms[current_room_id]
+	room_data["is_cleared"] = true
+	rooms[current_room_id] = room_data
+	generated_map_data["rooms"] = rooms
+
+
+# -------------------------------------------------------------------
+# CAMBIO DE SALA
+# -------------------------------------------------------------------
+
+func go_to_next_room() -> void:
+	# Fase 2B:
+	# Seguimos avanzando solo por la ruta principal hacia el este.
+	# Las conexiones norte/sur existen en el mapa, pero aún no son jugables.
+
+	var next_room_id: String = get_connected_room_id(current_room_id, "east")
+
+	if next_room_id.is_empty():
+		complete_dungeon()
+		return
+
+	load_room_by_id(next_room_id)
+
+
+func get_connected_room_id(room_id: String, direction: String) -> String:
+	var room_data: Dictionary = get_room_data(room_id)
+
+	if room_data.is_empty():
+		return ""
+
+	var connections: Dictionary = room_data.get("connections", {})
+
+	if not connections.has(direction):
+		return ""
+
+	return str(connections[direction])
+
+
+func complete_dungeon() -> void:
+	print("Mazmorra completada.")
+	dungeon_completed.emit()
+
+
 # -------------------------------------------------------------------
 # SEÑALES DE SALA
 # -------------------------------------------------------------------
@@ -247,7 +351,8 @@ func connect_current_room_signals() -> void:
 
 
 func _on_current_room_cleared() -> void:
-	print("DungeonManager ha recibido room_cleared de la sala actual.")
+	print("DungeonManager ha recibido room_cleared de la sala actual: ", current_room_id)
+	mark_current_room_as_cleared()
 
 
 func _on_current_room_exit_requested() -> void:
