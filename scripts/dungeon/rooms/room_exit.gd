@@ -22,6 +22,7 @@ signal directional_exit_requested(direction: String)
 
 var exit_enabled: bool = true
 
+var temporary_disabled_timer: float = 0.0
 
 func _ready() -> void:
 	z_index = 30
@@ -31,7 +32,15 @@ func _ready() -> void:
 	apply_enabled_state()
 	queue_redraw()
 
+func _process(delta: float) -> void:
+	if temporary_disabled_timer <= 0.0:
+		return
 
+	temporary_disabled_timer -= delta
+
+	if temporary_disabled_timer < 0.0:
+		temporary_disabled_timer = 0.0
+		
 func set_exit_enabled(value: bool) -> void:
 	# Activa o desactiva completamente esta salida.
 	# Si está desactivada:
@@ -42,7 +51,11 @@ func set_exit_enabled(value: bool) -> void:
 	exit_enabled = value
 	apply_enabled_state()
 	queue_redraw()
-
+	
+func set_temporary_disabled(duration: float) -> void:
+	# Evita que la puerta se active justo al cargar una sala
+	# si el jugador aparece dentro o demasiado cerca del área.
+	temporary_disabled_timer = max(temporary_disabled_timer, duration)
 
 func apply_enabled_state() -> void:
 	visible = exit_enabled
@@ -72,6 +85,9 @@ func lock() -> void:
 
 
 func _on_body_entered(body: Node) -> void:
+	if temporary_disabled_timer > 0.0:
+		return
+
 	if not exit_enabled:
 		return
 

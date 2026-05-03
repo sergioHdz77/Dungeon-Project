@@ -367,6 +367,13 @@ func _on_exit_door_requested() -> void:
 
 	exit_requested.emit()
 
+func set_exit_doors_temporarily_disabled(duration: float) -> void:
+	var exit_doors: Array[Node] = get_exit_doors()
+
+	for exit_door in exit_doors:
+		if exit_door.has_method("set_temporary_disabled"):
+			exit_door.set_temporary_disabled(duration)
+
 
 # -------------------------------------------------------------------
 # LIMPIEZA DE SALA / LOOT

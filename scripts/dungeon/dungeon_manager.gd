@@ -194,7 +194,8 @@ func load_room_by_id(room_id: String, entered_from_direction: String = "") -> vo
 	connect_current_room_signals()
 
 	configure_current_room_exits(room_data)
-
+	disable_current_room_exits_briefly()
+	
 	move_player_to_room_spawn(current_room, entered_from_direction)
 	setup_current_room(room_data)
 
@@ -342,6 +343,13 @@ func go_to_next_room() -> void:
 	# Mientras algunas puertas no tengan dirección, asumimos que avanzar significa ir al este.
 
 	go_to_connected_room("east")
+	
+func disable_current_room_exits_briefly() -> void:
+	if current_room == null:
+		return
+
+	if current_room.has_method("set_exit_doors_temporarily_disabled"):
+		current_room.set_exit_doors_temporarily_disabled(0.25)
 
 func go_to_connected_room(direction: String) -> void:
 	if is_changing_room:
