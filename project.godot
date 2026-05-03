@@ -21,6 +21,7 @@ SaveManager="*uid://h1772y7h71bx"
 [global_group]
 
 enemies=""
+heavy_enemies=""
 
 [input]
 

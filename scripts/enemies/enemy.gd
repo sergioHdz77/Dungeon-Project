@@ -11,6 +11,24 @@ extends CharacterBody2D
 @export var xp_value: float = 10.0
 @export var coin_value: int = 1
 
+# -------------------------------------------------------------------
+# KNOCKBACK
+# -------------------------------------------------------------------
+
+# Cuánta resistencia tiene este enemigo al knockback.
+# 0.0 = recibe todo el knockback.
+# 0.5 = recibe la mitad.
+# 0.8 = recibe muy poco.
+@export_range(0.0, 1.0, 0.05) var knockback_resistance: float = 0.0
+
+# Fricción que reduce el knockback con el tiempo.
+@export var knockback_friction: float = 900.0
+
+# Mientras hay knockback activo, reducimos temporalmente la persecución.
+# Esto evita que enemigos rápidos cancelen el empuje inmediatamente.
+@export var chase_control_during_knockback: float = 0.25
+
+var knockback_velocity: Vector2 = Vector2.ZERO
 
 # -------------------------------------------------------------------
 # VISUAL PLACEHOLDER
@@ -96,6 +114,7 @@ func _physics_process(delta: float) -> void:
 	if target == null:
 		return
 
+	update_knockback(delta)
 	move_towards_target()
 	apply_contact_damage(delta)
 	update_visual_direction()
@@ -105,9 +124,38 @@ func _physics_process(delta: float) -> void:
 
 func move_towards_target() -> void:
 	var dir: Vector2 = global_position.direction_to(target.global_position)
-	velocity = dir * speed
+	var chase_velocity: Vector2 = dir * speed
+
+	# Si está siendo empujado, reducimos temporalmente su capacidad
+	# de perseguir al jugador. Esto hace que el knockback se note
+	# también en enemigos rápidos.
+	if knockback_velocity.length() > 5.0:
+		chase_velocity *= chase_control_during_knockback
+
+	velocity = chase_velocity + knockback_velocity
+
 	move_and_slide()
 
+func apply_knockback(direction: Vector2, force: float) -> void:
+	# Aplica empuje al enemigo.
+	# La resistencia se configura en cada escena de enemigo.
+
+	if direction.length() <= 0.01:
+		return
+
+	var final_force: float = force * (1.0 - knockback_resistance)
+
+	if final_force <= 0.0:
+		return
+
+	knockback_velocity += direction.normalized() * final_force
+
+func update_knockback(delta: float) -> void:
+	# Reduce progresivamente el empuje hasta llegar a cero.
+	knockback_velocity = knockback_velocity.move_toward(
+		Vector2.ZERO,
+		knockback_friction * delta
+	)
 
 func apply_contact_damage(delta: float) -> void:
 	for i in get_slide_collision_count():

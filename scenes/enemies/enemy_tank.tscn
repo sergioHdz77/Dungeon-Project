@@ -5,13 +5,16 @@
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_v6fml"]
 
-[node name="EnemyTank" type="CharacterBody2D" unique_id=1173866472]
+[node name="EnemyTank" type="CharacterBody2D" unique_id=1173866472 groups=["heavy_enemies"]]
 script = ExtResource("1_cnr0l")
 speed = 70.0
 max_health = 160.0
 contact_damage = 22.0
 xp_value = 22.0
 coin_value = 3
+knockback_resistance = 0.6
+knockback_friction = 1100.0
+chase_control_during_knockback = 0.35
 draw_radius = 22.0
 enemy_color = Color(0.75966394, 0.21899226, 0.7543805, 1)
 

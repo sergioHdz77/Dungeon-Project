@@ -22,6 +22,7 @@ extends Node
 @export var attack_cooldown: float = 0.45
 @export var melee_range: float = 90.0
 @export var melee_arc_degrees: float = 120.0
+@export var melee_knockback_force: float = 350.0
 
 var attack_timer: float = 0.0
 
@@ -126,7 +127,25 @@ func try_melee_attack() -> void:
 		if is_enemy_inside_melee_arc(enemy_2d):
 			if enemy_2d.has_method("take_damage"):
 				enemy_2d.call("take_damage", attack_damage)
+				apply_knockback_to_enemy(enemy_2d)
+				
+func apply_knockback_to_enemy(enemy: Node2D) -> void:
+	if player == null:
+		return
 
+	if not enemy.has_method("apply_knockback"):
+		return
+
+	var direction: Vector2 = enemy.global_position - player.global_position
+
+	if direction.length() <= 0.01:
+		direction = facing_direction
+
+	enemy.call(
+		"apply_knockback",
+		direction.normalized(),
+		melee_knockback_force
+	)
 
 func is_enemy_inside_melee_arc(enemy: Node2D) -> bool:
 	var to_enemy: Vector2 = enemy.global_position - player.global_position
