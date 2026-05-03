@@ -8,10 +8,6 @@ extends Node
 # - bloqueo direccional
 # - stamina de bloqueo
 #
-# Ya no contiene:
-# - proyectiles
-# - aura
-# - autoataque
 # - búsqueda automática de enemigos
 
 # -------------------------

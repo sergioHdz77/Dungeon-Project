@@ -10,7 +10,6 @@ script = ExtResource("1_va6uj")
 speed = 190.0
 max_health = 35.0
 contact_damage = 8.0
-xp_value = 8.0
 chase_control_during_knockback = 0.15
 enemy_color = Color(0.1871978, 0.5883757, 0.25501236, 1)
 

@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://k0ueardwotbn" path="res://scripts/core/main.gd" id="1_jvmw0"]
 [ext_resource type="Script" uid="uid://sqom3s80cofr" path="res://scripts/world/map.gd" id="2_44pk5"]
-[ext_resource type="Script" uid="uid://blgin1xvnkgku" path="res://scripts/dungeon/dungeon_run_manager.gd" id="2_jpx65"]
 [ext_resource type="Script" uid="uid://crtk6hemjhxki" path="res://scripts/dungeon/dungeon_manager.gd" id="3_fu2j5"]
 [ext_resource type="PackedScene" uid="uid://8h3i1lsxrk0d" path="res://scenes/player/Player.tscn" id="3_phv0v"]
 [ext_resource type="Script" uid="uid://c0ywgwmhc3p7k" path="res://scripts/player/player.gd" id="4_jpx65"]
@@ -18,9 +17,6 @@
 
 [node name="Main" type="Node2D" unique_id=2000043926]
 script = ExtResource("1_jvmw0")
-
-[node name="DungeonRunManager" type="Node" parent="." unique_id=1649842022]
-script = ExtResource("2_jpx65")
 
 [node name="DungeonManager" type="Node" parent="." unique_id=465453838 node_paths=PackedStringArray("room_container", "player")]
 script = ExtResource("3_fu2j5")

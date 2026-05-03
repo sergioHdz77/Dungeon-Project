@@ -4,7 +4,6 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 
 # Referencias principales de la escena.
 @onready var dungeon_manager: Node = get_node_or_null("DungeonManager")
-@onready var dungeon_run_manager: Node = get_node_or_null("DungeonRunManager")
 @onready var player: Node = get_node_or_null("Player")
 @onready var hud: Node = get_node_or_null("HUD")
 @onready var start_screen: Node = get_node_or_null("StartScreen")
@@ -147,10 +146,6 @@ func start_dungeon_at_current_difficulty() -> void:
 	if dungeon_manager != null:
 		if dungeon_manager.has_method("create_test_dungeon"):
 			dungeon_manager.create_test_dungeon(current_difficulty)
-
-	if dungeon_run_manager != null:
-		if dungeon_run_manager.has_method("start_run"):
-			dungeon_run_manager.start_run()
 
 # -------------------------------------------------------------------
 # INICIO DE RUN

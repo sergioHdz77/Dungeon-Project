@@ -1,7 +1,7 @@
 extends Area2D
 
 # Drop de loot/equipo.
-# A diferencia de xp_drop o coin_drop, esto representa un objeto
+# A diferencia de coin_drop, esto representa un objeto
 # que más adelante podrá guardarse en el inventario persistente.
 
 signal collected(item_id: String, display_name: String)

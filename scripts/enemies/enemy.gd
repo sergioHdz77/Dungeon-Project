@@ -8,7 +8,6 @@ extends CharacterBody2D
 @export var max_health: float = 60.0
 @export var contact_damage: float = 12.0
 
-@export var xp_value: float = 10.0
 @export var coin_value: int = 1
 
 # -------------------------------------------------------------------
@@ -66,7 +65,6 @@ var animated_sprite: AnimatedSprite2D = null
 # DROPS
 # -------------------------------------------------------------------
 
-var xp_drop_scene: PackedScene = preload("res://scenes/drops/xp_drop.tscn")
 var coin_drop_scene: PackedScene = preload("res://scenes/drops/coin_drop.tscn")
 
 
@@ -98,7 +96,6 @@ func setup(
 	max_health *= health_multiplier
 	speed *= speed_multiplier
 	contact_damage *= damage_multiplier
-	xp_value *= reward_multiplier
 	coin_value = max(1, int(round(float(coin_value) * reward_multiplier)))
 
 	health = max_health
@@ -222,7 +219,6 @@ func die() -> void:
 	if target != null and target.has_method("register_kill"):
 		target.register_kill()
 
-	drop_xp()
 	drop_coin()
 
 	# De momento borramos inmediatamente.
@@ -240,15 +236,6 @@ func update_hit_flash(delta: float) -> void:
 
 		if animated_sprite != null:
 			animated_sprite.modulate = Color.WHITE
-
-
-func drop_xp() -> void:
-	if xp_drop_scene == null:
-		return
-
-	var xp_drop = xp_drop_scene.instantiate()
-	get_tree().current_scene.add_child(xp_drop)
-	xp_drop.setup(global_position + Vector2(-8, 0), xp_value)
 
 
 func drop_coin() -> void:

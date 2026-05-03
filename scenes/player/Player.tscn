@@ -39,6 +39,16 @@ radius = 4.3333335
 [node name="Player" type="CharacterBody2D" unique_id=1173866472]
 script = SubResource("GDScript_p0vlq")
 
+[node name="Visuals" type="Node2D" parent="." unique_id=848307757]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals" unique_id=1317566803]
+
+[node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
+
+[node name="WeaponVisuals" type="Node2D" parent="EquipmentVisuals" unique_id=1870725478]
+
+[node name="ArmorVisuals" type="Node2D" parent="EquipmentVisuals" unique_id=1692163598]
+
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1205511733]
 visible = false
 texture = ExtResource("1_p0vlq")
@@ -56,13 +66,3 @@ script = ExtResource("3_4kuee")
 [node name="Progression" type="Node" parent="." unique_id=99627898]
 script = ExtResource("4_524rm")
 max_health = 900.0
-
-[node name="Visuals" type="Node2D" parent="." unique_id=848307757]
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals" unique_id=1317566803]
-
-[node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
-
-[node name="WeaponVisuals" type="Node2D" parent="EquipmentVisuals" unique_id=1870725478]
-
-[node name="ArmorVisuals" type="Node2D" parent="EquipmentVisuals" unique_id=1692163598]

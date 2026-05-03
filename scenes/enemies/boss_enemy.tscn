@@ -10,7 +10,6 @@ script = ExtResource("1_ciwj1")
 speed = 85.0
 max_health = 180.0
 contact_damage = 20.0
-xp_value = 40.0
 coin_value = 8
 knockback_resistance = 1.0
 draw_radius = 28.0

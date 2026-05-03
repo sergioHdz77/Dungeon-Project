@@ -7,18 +7,15 @@ const SAVE_PATH := "user://save_game.json"
 
 
 # -------------------------------------------------------------------
-# LEGACY / SISTEMA ANTIGUO
+# AHORRO META
 # -------------------------------------------------------------------
 
-# Sistema antiguo del prototipo survivor-like.
-# Se mantiene temporalmente para no romper scripts antiguos,
+# Ahorro persistente conservado para el sistema de meta savings.
 # pero el nuevo juego NO debería usarlo.
 var meta_savings: int = 0
 
 
 func add_savings(amount: int) -> void:
-	# Sistema antiguo.
-	# No usar para el nuevo roguelite dungeon crawler.
 	if amount <= 0:
 		return
 	
@@ -239,7 +236,7 @@ func get_inventory_text() -> String:
 
 func save_game() -> void:
 	var data: Dictionary = {
-		# Legacy
+		# Ahorro meta
 		"meta_savings": meta_savings,
 
 		# Nuevo sistema
@@ -280,7 +277,7 @@ func load_game() -> void:
 
 	var data: Dictionary = parsed
 
-	# Legacy.
+	# Ahorro meta.
 	if data.has("meta_savings"):
 		meta_savings = int(data["meta_savings"])
 	else:
@@ -331,7 +328,7 @@ func load_game() -> void:
 
 func reset_save() -> void:
 	# Resetea todo el progreso persistente.
-	# De momento también resetea meta_savings legacy.
+	# Resetea tambien el ahorro meta.
 
 	_reset_runtime_values()
 	save_game()

@@ -6,7 +6,6 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 # SEÑALES PÚBLICAS
 # -------------------------------------------------------------------
 
-signal level_up_requested(new_level: int)
 signal stats_changed
 signal player_died
 
@@ -78,7 +77,7 @@ func _ready() -> void:
 	cache_visual_nodes()
 	connect_component_signals()
 
-	# Inicializa vida, XP y estado de progresión.
+	# Inicializa vida y estado de progresion.
 	progression.initialize()
 
 	refresh_equipment_visuals()
@@ -110,7 +109,6 @@ func connect_component_signals() -> void:
 	economy.economy_changed.connect(_on_economy_changed)
 
 	progression.progression_changed.connect(_on_progression_changed)
-	progression.level_up_requested.connect(_on_progression_level_up_requested)
 	progression.player_died.connect(_on_progression_player_died)
 
 
@@ -167,10 +165,6 @@ func _on_progression_changed() -> void:
 	queue_redraw()
 
 
-func _on_progression_level_up_requested(new_level: int) -> void:
-	level_up_requested.emit(new_level)
-
-
 func _on_progression_player_died() -> void:
 	# Preparado para animación de muerte futura.
 	play_animation("death", 999.0)
@@ -183,99 +177,19 @@ func _on_progression_player_died() -> void:
 # -------------------------------------------------------------------
 
 func apply_passive_effects(delta: float) -> void:
-	# Conservamos estos sistemas porque pueden servir para oro/XP
-	# y mejoras temporales dentro de la run.
-
-	if economy != null:
-		economy.apply_passive_income(delta)
-
 	if progression != null:
 		progression.apply_passive_effects(delta)
-
-
-func apply_meta_upgrades() -> void:
-	# Sistema antiguo del prototipo survivor-like.
-	# Ya no se usa en el nuevo roguelite dungeon crawler.
-	pass
-
-
-# -------------------------------------------------------------------
-# MEJORAS TEMPORALES DE RUN
-# -------------------------------------------------------------------
-
-func apply_upgrade(upgrade_id: String) -> void:
-	# Sistema provisional para futuras mejoras temporales.
-	# Se mantiene porque XP/subida de nivel puede volver más adelante,
-	# pero se han eliminado efectos antiguos de proyectiles/aura.
-
-	match upgrade_id:
-		"damage":
-			combat.add_damage(6.0)
-
-		"cooldown":
-			combat.multiply_cooldown(0.88)
-
-		"speed":
-			speed += 25.0
-
-		"health":
-			progression.add_max_health(20.0, 20.0)
-
-		"range":
-			combat.add_range(30.0)
-
-		"regeneration":
-			progression.add_health_regen(0.8)
-
-		"risk_damage":
-			combat.add_damage(10.0)
-			speed *= 0.88
-
-		"risk_xp":
-			progression.multiply_xp_gain(1.25)
-			progression.multiply_damage_taken(1.15)
-
-		# Legacy del survivor-like. No hacen nada.
-		"projectile":
-			pass
-
-		"aura":
-			pass
-
-		"internship":
-			pass
-
-		"overtime":
-			pass
-
-		"master_humo":
-			pass
-
-		"networking_risky":
-			pass
-
-		"dental_insurance":
-			pass
-
-	stats_changed.emit()
-	queue_redraw()
 
 
 # -------------------------------------------------------------------
 # API PÚBLICA PARA DROPS / ENEMIGOS / SISTEMAS EXTERNOS
 # -------------------------------------------------------------------
 
-func add_xp(amount: float) -> void:
-	progression.add_xp(amount)
-
-
 func add_coins(amount: int) -> void:
 	economy.add_coins(amount)
 
 
 func try_secure_savings(cost: int, amount: int) -> bool:
-	# Legacy del prototipo anterior.
-	# Se mantiene temporalmente por compatibilidad.
 	if economy.has_method("try_secure_savings"):
 		return economy.try_secure_savings(cost, amount)
 
@@ -486,7 +400,6 @@ func _draw() -> void:
 	draw_player_body()
 	draw_health_bar()
 	draw_stamina_bar()
-	draw_xp_bar()
 
 
 func draw_melee_attack_debug() -> void:
@@ -612,33 +525,9 @@ func draw_stamina_bar() -> void:
 	)
 
 
-func draw_xp_bar() -> void:
-	var bar_width: float = 44.0
-	var bar_height: float = 4.0
-	var bar_position: Vector2 = Vector2(-bar_width / 2.0, -21.0)
-	var xp_ratio: float = 0.0
-
-	if progression.xp_to_next_level > 0.0:
-		xp_ratio = progression.xp / progression.xp_to_next_level
-
-	draw_rect(
-		Rect2(bar_position, Vector2(bar_width, bar_height)),
-		Color(0.1, 0.1, 0.2)
-	)
-
-	draw_rect(
-		Rect2(bar_position, Vector2(bar_width * xp_ratio, bar_height)),
-		Color(0.2, 0.7, 1.0)
-	)
-
-
 # -------------------------------------------------------------------
 # GETTERS PARA HUD / MAIN
 # -------------------------------------------------------------------
-
-func get_level() -> int:
-	return progression.level
-
 
 func get_health() -> float:
 	return progression.health
@@ -648,20 +537,8 @@ func get_max_health() -> float:
 	return progression.max_health
 
 
-func get_xp() -> float:
-	return progression.xp
-
-
-func get_xp_to_next_level() -> float:
-	return progression.xp_to_next_level
-
-
 func get_enemies_killed() -> int:
 	return progression.enemies_killed
-
-
-func get_total_xp_collected() -> int:
-	return progression.total_xp_collected
 
 
 func get_run_coins() -> int:
@@ -669,7 +546,6 @@ func get_run_coins() -> int:
 
 
 func get_run_savings() -> int:
-	# Legacy del prototipo anterior.
 	if "run_savings" in economy:
 		return economy.run_savings
 
@@ -680,29 +556,9 @@ func get_total_coins_collected() -> int:
 	return economy.total_coins_collected
 
 
-func get_passive_coin_per_second() -> float:
-	return economy.passive_coin_per_second
-
-
 func get_attack_damage() -> float:
 	return combat.attack_damage
 
 
 func get_attack_range() -> float:
 	return combat.melee_range
-
-
-# -------------------------------------------------------------------
-# GETTERS LEGACY PARA NO ROMPER SCRIPTS ANTIGUOS
-# -------------------------------------------------------------------
-
-func get_projectile_count() -> int:
-	return 0
-
-
-func get_aura_level() -> int:
-	return 0
-
-
-func get_aura_damage_per_second() -> float:
-	return 0.0
