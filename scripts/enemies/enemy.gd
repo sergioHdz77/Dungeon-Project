@@ -41,6 +41,15 @@ var knockback_velocity: Vector2 = Vector2.ZERO
 # Si más adelante hay AnimatedSprite2D, el círculo placeholder se puede desactivar.
 @export var use_placeholder_drawing: bool = true
 
+# -------------------------------------------------------------------
+# HIT FEEDBACK
+# -------------------------------------------------------------------
+
+@export var hit_flash_duration: float = 0.10
+@export var hit_flash_color: Color = Color(1.0, 1.0, 1.0)
+
+var hit_flash_timer: float = 0.0
+
 
 # -------------------------------------------------------------------
 # REFERENCIAS
@@ -114,6 +123,7 @@ func _physics_process(delta: float) -> void:
 	if target == null:
 		return
 
+	update_hit_flash(delta)
 	update_knockback(delta)
 	move_towards_target()
 	apply_contact_damage(delta)
@@ -186,6 +196,7 @@ func apply_contact_damage(delta: float) -> void:
 func take_damage(amount: float) -> void:
 	health -= amount
 
+	start_hit_flash()
 	play_animation("hurt")
 
 	print(name, " recibe daño: ", amount, " | vida restante: ", health)
@@ -195,6 +206,13 @@ func take_damage(amount: float) -> void:
 	else:
 		queue_redraw()
 
+func start_hit_flash() -> void:
+	hit_flash_timer = hit_flash_duration
+
+	# Si más adelante hay sprite, podemos modularlo.
+	# De momento lo dejamos preparado sin depender del sprite.
+	if animated_sprite != null:
+		animated_sprite.modulate = hit_flash_color
 
 func die() -> void:
 	print(name, " muere")
@@ -210,6 +228,18 @@ func die() -> void:
 	# De momento borramos inmediatamente.
 	# Más adelante, si hay animación de muerte, esperaremos a que termine.
 	queue_free()
+
+func update_hit_flash(delta: float) -> void:
+	if hit_flash_timer <= 0.0:
+		return
+
+	hit_flash_timer -= delta
+
+	if hit_flash_timer <= 0.0:
+		hit_flash_timer = 0.0
+
+		if animated_sprite != null:
+			animated_sprite.modulate = Color.WHITE
 
 
 func drop_xp() -> void:
@@ -290,7 +320,12 @@ func _draw() -> void:
 
 
 func draw_enemy_body_placeholder() -> void:
-	draw_circle(Vector2.ZERO, draw_radius, enemy_color)
+	var current_color: Color = enemy_color
+
+	if hit_flash_timer > 0.0:
+		current_color = hit_flash_color
+
+	draw_circle(Vector2.ZERO, draw_radius, current_color)
 
 
 func draw_health_bar() -> void:
