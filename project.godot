@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Proyecto Money"
+config/name="Proyecto Dungeon"
 run/main_scene="uid://djgcf5mrurx4i"
 config/features=PackedStringArray("4.6", "Mobile")
 

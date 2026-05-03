@@ -49,16 +49,39 @@ var equipped_armor_name: String = "Sin armadura"
 var armor_damage_taken_multiplier: float = 1.0
 
 # -------------------------------------------------------------------
+# VISUAL / SPRITES FUTUROS
+# -------------------------------------------------------------------
+
+# Mientras no tengamos sprites, seguimos dibujando el placeholder.
+# Cuando haya AnimatedSprite2D real, podremos ponerlo a false.
+@export var use_placeholder_drawing: bool = true
+
+# Tiempo mínimo que se mantiene una animación de daño antes de volver a idle/move.
+@export var hurt_animation_duration: float = 0.15
+
+var visuals: Node2D = null
+var animated_sprite: AnimatedSprite2D = null
+
+var equipment_visuals: Node2D = null
+var weapon_visual: Node2D = null
+var armor_visual: Node2D = null
+
+var animation_lock_timer: float = 0.0
+
+# -------------------------------------------------------------------
 # CICLO DE VIDA
 # -------------------------------------------------------------------
 
 func _ready() -> void:
 	add_to_group("player")
 
+	cache_visual_nodes()
 	connect_component_signals()
 
 	# Inicializa vida, XP y estado de progresión.
 	progression.initialize()
+
+	refresh_equipment_visuals()
 
 	stats_changed.emit()
 	queue_redraw()
@@ -68,9 +91,14 @@ func _physics_process(delta: float) -> void:
 	if progression.is_dead:
 		return
 
+	if animation_lock_timer > 0.0:
+		animation_lock_timer -= delta
+
 	handle_movement()
 	combat.process_combat(delta)
 	apply_passive_effects(delta)
+	update_visual_direction()
+	update_movement_animation()
 
 	# De momento actualizamos HUD/redraw cada frame porque stamina,
 	# bloqueo y barras locales cambian continuamente.
@@ -144,6 +172,9 @@ func _on_progression_level_up_requested(new_level: int) -> void:
 
 
 func _on_progression_player_died() -> void:
+	# Preparado para animación de muerte futura.
+	play_animation("death", 999.0)
+
 	player_died.emit()
 
 
@@ -266,6 +297,9 @@ func take_damage(amount: float, damage_source: Node2D = null) -> void:
 	# Después aplicamos reducción de armadura.
 	final_damage *= armor_damage_taken_multiplier
 
+	if final_damage > 0.0:
+		play_animation("hurt", hurt_animation_duration)
+
 	progression.take_damage(final_damage)
 
 
@@ -301,6 +335,8 @@ func equip_weapon(item_id: String) -> void:
 	if combat != null:
 		combat.add_damage(damage_bonus)
 
+	refresh_equipment_visuals()
+
 	print("Arma equipada: ", equipped_weapon_name, " | daño bonus: ", damage_bonus)
 
 	stats_changed.emit()
@@ -327,6 +363,8 @@ func equip_armor(item_id: String) -> void:
 
 	armor_damage_taken_multiplier = float(item_data.get("damage_taken_multiplier", 1.0))
 
+	refresh_equipment_visuals()
+
 	print(
 		"Armadura equipada: ",
 		equipped_armor_name,
@@ -348,6 +386,95 @@ func get_equipped_armor_name() -> String:
 
 func get_equipped_armor_id() -> String:
 	return equipped_armor_id
+
+# -------------------------------------------------------------------
+# VISUAL / ANIMACIÓN
+# -------------------------------------------------------------------
+
+func cache_visual_nodes() -> void:
+	# Busca nodos visuales opcionales.
+	# Si no existen, el jugador sigue funcionando con dibujo placeholder.
+
+	visuals = get_node_or_null("Visuals") as Node2D
+
+	if visuals != null:
+		animated_sprite = visuals.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+
+	equipment_visuals = get_node_or_null("EquipmentVisuals") as Node2D
+
+	if equipment_visuals != null:
+		weapon_visual = equipment_visuals.get_node_or_null("WeaponVisual") as Node2D
+		armor_visual = equipment_visuals.get_node_or_null("ArmorVisual") as Node2D
+
+
+func update_visual_direction() -> void:
+	# Preparado para sprites laterales.
+	# Si el jugador se mueve hacia la izquierda, volteamos el sprite.
+
+	if animated_sprite == null:
+		return
+
+	if absf(velocity.x) <= 0.01:
+		return
+
+	animated_sprite.flip_h = velocity.x < 0.0
+
+
+func update_movement_animation() -> void:
+	# Si hay una animación temporal bloqueada, no la sobrescribimos.
+	# Ejemplo: hurt/death.
+
+	if animation_lock_timer > 0.0:
+		return
+
+	if velocity.length() > 1.0:
+		play_animation("move")
+	else:
+		play_animation("idle")
+
+
+func play_animation(animation_name: String, lock_duration: float = 0.0) -> void:
+	# Intenta reproducir una animación si existe.
+	# Si todavía no hay sprites, no hace nada.
+
+	if animated_sprite == null:
+		return
+
+	if animated_sprite.sprite_frames == null:
+		return
+
+	if not animated_sprite.sprite_frames.has_animation(animation_name):
+		return
+
+	if animated_sprite.animation == animation_name and animated_sprite.is_playing():
+		return
+
+	animated_sprite.play(animation_name)
+
+	if lock_duration > 0.0:
+		animation_lock_timer = lock_duration
+
+
+func has_animated_visuals() -> bool:
+	if animated_sprite == null:
+		return false
+
+	if animated_sprite.sprite_frames == null:
+		return false
+
+	return true
+
+
+func refresh_equipment_visuals() -> void:
+	# De momento solo activa/desactiva nodos visuales.
+	# Más adelante aquí asignaremos sprites/texturas concretas según item_id.
+
+	if weapon_visual != null:
+		weapon_visual.visible = not equipped_weapon_id.is_empty()
+
+	if armor_visual != null:
+		armor_visual.visible = not equipped_armor_id.is_empty()
+
 
 # -------------------------------------------------------------------
 # DIBUJO DEBUG / PLACEHOLDER
@@ -434,6 +561,11 @@ func draw_block_debug() -> void:
 
 
 func draw_player_body() -> void:
+	# Si ya tenemos sprite animado real y hemos desactivado placeholder,
+	# no dibujamos el círculo.
+	if has_animated_visuals() and not use_placeholder_drawing:
+		return
+
 	draw_circle(Vector2.ZERO, 12.0, Color(0.85, 0.85, 0.95))
 
 

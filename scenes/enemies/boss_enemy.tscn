@@ -22,3 +22,7 @@ texture = ExtResource("2_1dk32")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
 scale = Vector2(6, 6)
 shape = SubResource("CircleShape2D_v6fml")
+
+[node name="Visuals" type="Node2D" parent="." unique_id=896889564]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals" unique_id=708134542]
