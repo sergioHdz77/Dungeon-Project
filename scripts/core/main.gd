@@ -317,52 +317,23 @@ func build_run_result_text(
 
 
 func build_victory_result_text(run_gold: int) -> String:
-	if run_session != null:
-		return run_session.build_victory_result_text(run_gold)
+	if not has_run_session():
+		return ""
 
-	var result_text: String = ""
-	result_text += "Oro conseguido: %s\n" % run_gold
-	result_text += "Oro total: %s\n\n" % SaveManager.persistent_gold
-
-	if run_session.run_session.run_loot.is_empty():
-		result_text += "No has conseguido loot."
-	else:
-		result_text += "Loot conseguido:\n"
-		result_text += get_run_loot_text()
-		result_text += "\nGuardado en inventario persistente."
-
-	return result_text
+	return run_session.build_victory_result_text(run_gold)
 
 
 func build_defeat_result_text(run_gold: int, lost_equipment_text: String) -> String:
-	if run_session != null:
-		return run_session.build_defeat_result_text(run_gold, lost_equipment_text)
+	if not has_run_session():
+		return ""
 
-	var result_text: String = ""
-	result_text += lost_equipment_text
-	result_text += "\n\nOro perdido: %s\n" % run_gold
-	result_text += "\nLoot perdido:\n"
-
-	if run_session.run_session.run_loot.is_empty():
-		result_text += "- Ninguno"
-	else:
-		result_text += get_run_loot_text()
-
-	return result_text
-
+	return run_session.build_defeat_result_text(run_gold, lost_equipment_text)
 
 func get_run_loot_text() -> String:
-	if run_session != null:
-		return run_session.get_run_loot_text()
+	if run_session == null:
+		return ""
 
-	var text: String = ""
-
-	for item_data: Dictionary in run_session.run_loot:
-		var item_name: String = str(item_data.get("name", "Objeto desconocido"))
-		text += "- %s\n" % item_name
-
-	return text
-
+	return run_session.get_run_loot_text()
 
 # -------------------------------------------------------------------
 # LOOT DE RUN
@@ -380,19 +351,6 @@ func _on_item_collected(item_id: String, display_name: String) -> void:
 # -------------------------------------------------------------------
 # EQUIPAMIENTO PROVISIONAL
 # -------------------------------------------------------------------
-
-func get_auto_equipped_weapon_text() -> String:
-	for item_data: Dictionary in SaveManager.persistent_inventory:
-		var item_id: String = str(item_data.get("id", ""))
-
-		if item_id.is_empty():
-			continue
-
-		if ItemDatabase.is_weapon(item_id):
-			var weapon_name: String = ItemDatabase.get_item_name(item_id)
-			return "Arma: %s" % weapon_name
-
-	return "Arma: ninguna"
 
 
 func equip_selected_weapon_from_inventory() -> void:
