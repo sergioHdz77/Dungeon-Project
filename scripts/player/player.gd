@@ -67,6 +67,14 @@ var armor_visual: Node2D = null
 
 var animation_lock_timer: float = 0.0
 
+# Última dirección visual importante del jugador.
+# En top-down:
+# - Vector2.DOWN  = mira hacia cámara / frente
+# - Vector2.UP    = mira de espaldas
+# - Vector2.RIGHT = mira lateral derecha
+# - Vector2.LEFT  = mira lateral izquierda
+var visual_facing_direction: Vector2 = Vector2.RIGHT
+
 # -------------------------------------------------------------------
 # CICLO DE VIDA
 # -------------------------------------------------------------------
@@ -85,9 +93,9 @@ func _ready() -> void:
 	stats_changed.emit()
 	queue_redraw()
 
-	# Al empezar, reproducimos la animación idle lateral.
-	# De momento usamos idle_side porque solo tenemos el sprite lateral.
-	animated_sprite.play("idle")
+	# Al empezar, intentamos reproducir la animación idle inicial.
+	# Usamos play_animation porque comprueba si existe AnimatedSprite2D y si existe la animación.
+	play_animation_with_fallback("idle_side", "idle_side")
 
 func _physics_process(delta: float) -> void:
 	if progression.is_dead:
@@ -325,30 +333,73 @@ func cache_visual_nodes() -> void:
 
 
 func update_visual_direction() -> void:
-	# Preparado para sprites laterales.
-	# Si el jugador se mueve hacia la izquierda, volteamos el sprite.
-
+	# Si no hay sprite animado, no hacemos nada visual.
 	if animated_sprite == null:
 		return
 
-	if absf(velocity.x) <= 0.01:
+	# Solo actualizamos la dirección visual cuando el jugador se mueve.
+	# Si se queda quieto, conserva la última dirección para elegir el idle correcto.
+	if velocity.length() <= 1.0:
 		return
 
-	animated_sprite.flip_h = velocity.x < 0.0
+	var movement_direction: Vector2 = velocity.normalized()
+
+	# En diagonal, elegimos la dirección dominante:
+	# - Si pesa más X, usamos lateral.
+	# - Si pesa más Y, usamos frente/espalda.
+	if absf(movement_direction.x) >= absf(movement_direction.y):
+		if movement_direction.x < 0.0:
+			visual_facing_direction = Vector2.LEFT
+			animated_sprite.flip_h = true
+		else:
+			visual_facing_direction = Vector2.RIGHT
+			animated_sprite.flip_h = false
+	else:
+		if movement_direction.y < 0.0:
+			# En Godot, Y negativa es arriba.
+			# En top-down, moverse arriba significa ver la espalda del personaje.
+			visual_facing_direction = Vector2.UP
+		else:
+			# En Godot, Y positiva es abajo.
+			# En top-down, moverse abajo significa ver el frente del personaje.
+			visual_facing_direction = Vector2.DOWN
+
+		# Para frente/espalda no volteamos el sprite.
+		animated_sprite.flip_h = false
 
 
 func update_movement_animation() -> void:
 	# Si hay una animación temporal bloqueada, no la sobrescribimos.
 	# Ejemplo: hurt/death.
-
 	if animation_lock_timer > 0.0:
 		return
 
-	if velocity.length() > 1.0:
-		play_animation("walk_side")
-	else:
-		play_animation("idle_side")
+	var is_moving: bool = velocity.length() > 1.0
 
+	if is_moving:
+		play_walk_animation()
+	else:
+		play_idle_animation()
+
+func play_walk_animation() -> void:
+	# Elige la animación de caminar según la última dirección visual.
+	if visual_facing_direction == Vector2.UP:
+		play_animation_with_fallback("walk_back", "walk_side")
+	elif visual_facing_direction == Vector2.DOWN:
+		play_animation_with_fallback("walk_front", "walk_side")
+	else:
+		play_animation_with_fallback("walk_side", "walk_side")
+
+
+func play_idle_animation() -> void:
+	# Elige la animación idle según la última dirección visual.
+	# Si todavía no existen idle_front o idle_back, cae a idle_side.
+	if visual_facing_direction == Vector2.UP:
+		play_animation_with_fallback("idle_back", "idle_side")
+	elif visual_facing_direction == Vector2.DOWN:
+		play_animation_with_fallback("idle_front", "idle_side")
+	else:
+		play_animation_with_fallback("idle_side", "idle_side")
 
 func play_animation(animation_name: String, lock_duration: float = 0.0) -> void:
 	# Intenta reproducir una animación si existe.
@@ -371,6 +422,22 @@ func play_animation(animation_name: String, lock_duration: float = 0.0) -> void:
 	if lock_duration > 0.0:
 		animation_lock_timer = lock_duration
 
+func play_animation_with_fallback(animation_name: String, fallback_animation_name: String, lock_duration: float = 0.0) -> void:
+	# Intenta reproducir la animación principal.
+	# Si no existe, intenta reproducir una animación fallback.
+	# Esto permite avanzar aunque todavía no tengamos todos los idles hechos.
+	if animated_sprite == null:
+		return
+
+	if animated_sprite.sprite_frames == null:
+		return
+
+	if animated_sprite.sprite_frames.has_animation(animation_name):
+		play_animation(animation_name, lock_duration)
+		return
+
+	if animated_sprite.sprite_frames.has_animation(fallback_animation_name):
+		play_animation(fallback_animation_name, lock_duration)
 
 func has_animated_visuals() -> bool:
 	if animated_sprite == null:
