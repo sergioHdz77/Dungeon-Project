@@ -13,24 +13,6 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 @onready var run_session: Node = get_node_or_null("RunSession")
 @onready var equipment_menu_service: Node = get_node_or_null("EquipmentMenuService")
 
-# Estado de la run actual.
-var run_active: bool = false
-
-# Dificultad elegida en el menú para empezar una cadena de mazmorras.
-var selected_starting_difficulty: int = 1
-
-# Dificultad actual dentro de la cadena.
-var current_difficulty: int = 1
-
-# Dificultad máxima seleccionable desde el menú.
-# Más adelante puede depender de progreso/desbloqueos.
-var max_starting_difficulty: int = 3
-
-# Loot conseguido durante la run actual.
-# Si el jugador gana, pasa al inventario persistente.
-# Si el jugador muere, se pierde.
-var run_loot: Array[Dictionary] = []
-
 func _ready() -> void:
 	randomize()
 
@@ -41,6 +23,40 @@ func _ready() -> void:
 	update_hud()
 	show_start_screen()
 
+func has_run_session() -> bool:
+	if run_session == null:
+		push_error("Main: falta el nodo RunSession.")
+		return false
+
+	return true
+
+
+func get_run_active() -> bool:
+	if run_session == null:
+		return false
+
+	return run_session.active
+
+
+func get_selected_starting_difficulty() -> int:
+	if run_session == null:
+		return 1
+
+	return run_session.selected_starting_difficulty
+
+
+func get_current_difficulty() -> int:
+	if run_session == null:
+		return 1
+
+	return run_session.current_difficulty
+
+
+func get_max_starting_difficulty() -> int:
+	if run_session == null:
+		return 3
+
+	return run_session.max_starting_difficulty
 
 # -------------------------------------------------------------------
 # CONEXIÓN DE SEÑALES
@@ -126,8 +142,8 @@ func show_start_screen() -> void:
 				selected_weapon_id,
 				armor_options,
 				selected_armor_id,
-				selected_starting_difficulty,
-				max_starting_difficulty
+				get_selected_starting_difficulty(),
+				get_max_starting_difficulty()
 			)
 		else:
 			start_screen.visible = true
@@ -151,7 +167,7 @@ func hide_start_screen() -> void:
 func start_dungeon_at_current_difficulty() -> void:
 	if dungeon_manager != null:
 		if dungeon_manager.has_method("create_test_dungeon"):
-			dungeon_manager.create_test_dungeon(current_difficulty)
+			dungeon_manager.create_test_dungeon(get_current_difficulty())
 
 # -------------------------------------------------------------------
 # INICIO DE RUN
@@ -160,15 +176,10 @@ func start_dungeon_at_current_difficulty() -> void:
 func start_dungeon_run() -> void:
 	get_tree().paused = false
 
-	if run_session != null:
-		run_session.start_new_chain(selected_starting_difficulty)
-		run_active = run_session.active
-		current_difficulty = run_session.current_difficulty
-		run_loot = run_session.run_loot
-	else:
-		run_active = true
-		current_difficulty = selected_starting_difficulty
-		run_loot.clear()
+	if not has_run_session():
+		return
+
+	run_session.start_new_chain(get_selected_starting_difficulty())
 
 	# Equipamiento elegido desde el menú.
 	equip_selected_weapon_from_inventory()
@@ -183,14 +194,14 @@ func start_dungeon_run() -> void:
 # -------------------------------------------------------------------
 
 func _on_player_died() -> void:
-	if not run_active:
+	if not get_run_active():
 		return
 
 	finish_run(false)
 
 
 func _on_dungeon_completed() -> void:
-	if not run_active:
+	if not get_run_active():
 		return
 
 	show_dungeon_complete_screen()
@@ -209,8 +220,8 @@ func show_dungeon_complete_screen() -> void:
 
 	if dungeon_complete_screen.has_method("show_screen"):
 		dungeon_complete_screen.show_screen(
-			current_difficulty,
-			current_difficulty + 1,
+			get_current_difficulty(),
+			get_current_difficulty() + 1,
 			run_gold,
 			loot_text
 		)
@@ -232,23 +243,18 @@ func _on_return_home_pressed() -> void:
 
 
 func _on_open_portal_pressed() -> void:
-	# El jugador decide arriesgar lo conseguido.
-	# No guardamos nada todavía.
-	# Subimos dificultad y generamos otra mazmorra.
-
 	if dungeon_complete_screen != null:
 		if dungeon_complete_screen.has_method("hide_screen"):
 			dungeon_complete_screen.hide_screen()
 
 	get_tree().paused = false
 
-	if run_session != null:
-		run_session.open_portal()
-		current_difficulty = run_session.current_difficulty
-	else:
-		current_difficulty += 1
+	if not has_run_session():
+		return
 
-	print("Abriendo portal a dificultad: ", current_difficulty)
+	run_session.open_portal()
+
+	print("Abriendo portal a dificultad: ", get_current_difficulty())
 
 	start_dungeon_at_current_difficulty()
 	update_hud()
@@ -258,18 +264,13 @@ func finish_run(victory: bool) -> void:
 	var run_gold: int = get_run_gold()
 	var lost_equipment_text: String = ""
 
-	if run_session == null:
-		push_error("Main.finish_run(): falta el nodo RunSession.")
+	if not has_run_session():
 		return
 
 	if victory:
 		run_session.complete_chain_successfully(run_gold)
 	else:
 		lost_equipment_text = run_session.fail_chain(player)
-
-	run_active = run_session.active
-	current_difficulty = run_session.current_difficulty
-	run_loot = run_session.run_loot
 
 	update_hud()
 
@@ -323,7 +324,7 @@ func build_victory_result_text(run_gold: int) -> String:
 	result_text += "Oro conseguido: %s\n" % run_gold
 	result_text += "Oro total: %s\n\n" % SaveManager.persistent_gold
 
-	if run_loot.is_empty():
+	if run_session.run_session.run_loot.is_empty():
 		result_text += "No has conseguido loot."
 	else:
 		result_text += "Loot conseguido:\n"
@@ -342,7 +343,7 @@ func build_defeat_result_text(run_gold: int, lost_equipment_text: String) -> Str
 	result_text += "\n\nOro perdido: %s\n" % run_gold
 	result_text += "\nLoot perdido:\n"
 
-	if run_loot.is_empty():
+	if run_session.run_session.run_loot.is_empty():
 		result_text += "- Ninguno"
 	else:
 		result_text += get_run_loot_text()
@@ -356,7 +357,7 @@ func get_run_loot_text() -> String:
 
 	var text: String = ""
 
-	for item_data: Dictionary in run_loot:
+	for item_data: Dictionary in run_session.run_loot:
 		var item_name: String = str(item_data.get("name", "Objeto desconocido"))
 		text += "- %s\n" % item_name
 
@@ -368,16 +369,10 @@ func get_run_loot_text() -> String:
 # -------------------------------------------------------------------
 
 func _on_item_collected(item_id: String, display_name: String) -> void:
-	if run_session != null:
-		run_session.collect_item(item_id, display_name)
-		run_loot = run_session.run_loot
-	else:
-		var item_data: Dictionary = {
-			"id": item_id,
-			"name": display_name,
-		}
+	if not has_run_session():
+		return
 
-		run_loot.append(item_data)
+	run_session.collect_item(item_id, display_name)
 
 	print("Loot de run añadido: ", display_name, " | id: ", item_id)
 
@@ -463,7 +458,7 @@ func update_hud() -> void:
 			player,
 			0,
 			0,
-			current_difficulty
+			get_current_difficulty()
 		)
 
 
@@ -477,13 +472,9 @@ func get_run_gold() -> int:
 	return 0
 
 func _on_difficulty_selected(difficulty: int) -> void:
-	selected_starting_difficulty = clamp(
-		difficulty,
-		1,
-		max_starting_difficulty
-	)
+	if not has_run_session():
+		return
 
-	if run_session != null:
-		run_session.set_selected_starting_difficulty(selected_starting_difficulty)
+	run_session.set_selected_starting_difficulty(difficulty)
 
 	show_start_screen()
