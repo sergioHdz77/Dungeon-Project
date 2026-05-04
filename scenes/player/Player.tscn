@@ -16,6 +16,9 @@
 [ext_resource type="Script" uid="uid://bboy7rh16ukh8" path="res://scripts/player/player_equipment.gd" id="12_rn7t0"]
 [ext_resource type="Script" uid="uid://wvb3f7f7ggji" path="res://scripts/player/player_visual_controller.gd" id="13_8qjgm"]
 [ext_resource type="Script" uid="uid://buundep3wwipj" path="res://scripts/player/player_debug_view.gd" id="14_ejd4k"]
+[ext_resource type="Script" uid="uid://0daf4gff3vol" path="res://scripts/player/player_equipment_visuals.gd" id="17_ejd4k"]
+[ext_resource type="Script" uid="uid://dxbesdydeqic" path="res://scripts/player/equipment_visual_entry.gd" id="18_pi3ps"]
+[ext_resource type="Texture2D" uid="uid://cvcdbd7b5vb22" path="res://art/enemyFlyingAlt_2.png" id="19_kswpp"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ov1oi"]
 atlas = ExtResource("2_7oing")
@@ -221,6 +224,12 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_tpg5x"]
 size = Vector2(2.7083333, 6.291667)
 
+[sub_resource type="Resource" id="Resource_v5i4m"]
+script = ExtResource("18_pi3ps")
+item_id = "rusty_sword"
+texture = ExtResource("19_kswpp")
+metadata/_custom_type_script = "uid://dxbesdydeqic"
+
 [node name="Player" type="CharacterBody2D" unique_id=1173866472]
 script = ExtResource("1_c3xxp")
 
@@ -266,7 +275,11 @@ script = ExtResource("12_rn7t0")
 script = ExtResource("13_8qjgm")
 
 [node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
+z_index = 10
+script = ExtResource("17_ejd4k")
+weapon_visual_entries = Array[ExtResource("18_pi3ps")]([SubResource("Resource_v5i4m")])
 
-[node name="WeaponVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1870725478]
+[node name="WeaponVisual" type="Sprite2D" parent="EquipmentVisuals" unique_id=1218636856]
 
-[node name="ArmorVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1692163598]
+[node name="ArmorVisual" type="Sprite2D" parent="EquipmentVisuals" unique_id=769056850]
+visible = false

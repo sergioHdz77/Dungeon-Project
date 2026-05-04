@@ -10,12 +10,13 @@ var equipment: Node = null
 
 var visuals: Node2D = null
 var animated_sprite: AnimatedSprite2D = null
-var equipment_visuals: Node2D = null
+var equipment_visuals: Node = null
 var weapon_visual: Node2D = null
 var armor_visual: Node2D = null
 
 var animation_lock_timer: float = 0.0
 var visual_facing_direction: Vector2 = Vector2.RIGHT
+
 
 
 func setup(owner_player: CharacterBody2D, equipment_component: Node) -> void:
@@ -27,7 +28,12 @@ func setup(owner_player: CharacterBody2D, equipment_component: Node) -> void:
 
 	if equipment != null and equipment.has_signal("equipment_changed"):
 		equipment.equipment_changed.connect(refresh_equipment_visuals)
+		
+func _ready() -> void:
+	var player: Node = get_parent()
 
+	if player != null:
+		equipment_visuals = player.get_node_or_null("EquipmentVisuals")
 
 func process_visuals(delta: float) -> void:
 	if player == null:
@@ -170,14 +176,30 @@ func refresh_equipment_visuals() -> void:
 func _on_weapon_equipped(weapon_id: String, weapon_data: Dictionary) -> void:
 	print("VisualController: arma equipada: ", weapon_id)
 
+	if equipment_visuals != null:
+		if equipment_visuals.has_method("show_weapon"):
+			equipment_visuals.show_weapon(weapon_id, weapon_data)
+
 
 func _on_armor_equipped(armor_id: String, armor_data: Dictionary) -> void:
 	print("VisualController: armadura equipada: ", armor_id)
+
+	if equipment_visuals != null:
+		if equipment_visuals.has_method("show_armor"):
+			equipment_visuals.show_armor(armor_id, armor_data)
 
 
 func _on_weapon_unequipped() -> void:
 	print("VisualController: arma desequipada")
 
+	if equipment_visuals != null:
+		if equipment_visuals.has_method("clear_weapon"):
+			equipment_visuals.clear_weapon()
+
 
 func _on_armor_unequipped() -> void:
 	print("VisualController: armadura desequipada")
+
+	if equipment_visuals != null:
+		if equipment_visuals.has_method("clear_armor"):
+			equipment_visuals.clear_armor()
