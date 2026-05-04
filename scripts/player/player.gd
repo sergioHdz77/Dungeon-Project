@@ -23,12 +23,35 @@ func _ready() -> void:
 	add_to_group("player")
 	_setup_components()
 	_connect_component_signals()
-
+	connect_equipment_visual_signals()
+	
 	if progression != null and progression.has_method("initialize"):
 		progression.initialize()
 
 	stats_changed.emit()
 
+func connect_equipment_visual_signals() -> void:
+	if equipment == null:
+		return
+
+	if visual_controller == null:
+		return
+
+	if equipment.has_signal("weapon_equipped"):
+		if not equipment.weapon_equipped.is_connected(visual_controller._on_weapon_equipped):
+			equipment.weapon_equipped.connect(visual_controller._on_weapon_equipped)
+
+	if equipment.has_signal("armor_equipped"):
+		if not equipment.armor_equipped.is_connected(visual_controller._on_armor_equipped):
+			equipment.armor_equipped.connect(visual_controller._on_armor_equipped)
+
+	if equipment.has_signal("weapon_unequipped"):
+		if not equipment.weapon_unequipped.is_connected(visual_controller._on_weapon_unequipped):
+			equipment.weapon_unequipped.connect(visual_controller._on_weapon_unequipped)
+
+	if equipment.has_signal("armor_unequipped"):
+		if not equipment.armor_unequipped.is_connected(visual_controller._on_armor_unequipped):
+			equipment.armor_unequipped.connect(visual_controller._on_armor_unequipped)
 
 func _physics_process(delta: float) -> void:
 	if progression != null and "is_dead" in progression and progression.is_dead:

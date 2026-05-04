@@ -232,12 +232,6 @@ scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_c3xxp")
 animation = &"walk_side"
 
-[node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
-
-[node name="WeaponVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1870725478]
-
-[node name="ArmorVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1692163598]
-
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
 position = Vector2(2.3841858e-07, -8)
 scale = Vector2(6, 6)
@@ -270,3 +264,9 @@ script = ExtResource("12_rn7t0")
 
 [node name="VisualController" type="Node" parent="." unique_id=1788622677]
 script = ExtResource("13_8qjgm")
+
+[node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
+
+[node name="WeaponVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1870725478]
+
+[node name="ArmorVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1692163598]

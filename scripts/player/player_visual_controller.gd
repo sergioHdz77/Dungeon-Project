@@ -156,7 +156,6 @@ func play_animation_with_fallback(
 func has_animated_visuals() -> bool:
 	return animated_sprite != null and animated_sprite.sprite_frames != null
 
-
 func refresh_equipment_visuals() -> void:
 	if equipment == null:
 		return
@@ -166,3 +165,19 @@ func refresh_equipment_visuals() -> void:
 
 	if armor_visual != null and equipment.has_method("get_equipped_armor_id"):
 		armor_visual.visible = not equipment.get_equipped_armor_id().is_empty()
+
+
+func _on_weapon_equipped(weapon_id: String, weapon_data: Dictionary) -> void:
+	print("VisualController: arma equipada: ", weapon_id)
+
+
+func _on_armor_equipped(armor_id: String, armor_data: Dictionary) -> void:
+	print("VisualController: armadura equipada: ", armor_id)
+
+
+func _on_weapon_unequipped() -> void:
+	print("VisualController: arma desequipada")
+
+
+func _on_armor_unequipped() -> void:
+	print("VisualController: armadura desequipada")

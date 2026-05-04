@@ -6,6 +6,16 @@ extends Node
 # - separa arma/armadura de Player.gd
 # - deja preparada la integración visual del equipo
 
+
+# Señales de equipamiento.
+# Este componente no actualiza sprites directamente.
+# Solo avisa de que el equipo ha cambiado.
+
+signal weapon_equipped(weapon_id: String, weapon_data: Dictionary)
+signal armor_equipped(armor_id: String, armor_data: Dictionary)
+signal weapon_unequipped()
+signal armor_unequipped()
+
 const ItemDatabase = preload("res://scripts/data/item_database.gd")
 
 signal equipment_changed
@@ -49,14 +59,14 @@ func equip_weapon(item_id: String) -> void:
 		combat.add_damage(equipped_weapon_damage_bonus)
 
 	equipment_changed.emit()
-
+	weapon_equipped.emit(item_id, item_data)
 
 func clear_weapon() -> void:
 	_remove_previous_weapon_bonus()
 	equipped_weapon_id = ""
 	equipped_weapon_name = "Sin arma"
 	equipment_changed.emit()
-
+	weapon_unequipped.emit()
 
 func _remove_previous_weapon_bonus() -> void:
 	if equipped_weapon_damage_bonus == 0.0:
@@ -87,14 +97,14 @@ func equip_armor(item_id: String) -> void:
 	armor_damage_taken_multiplier = float(item_data.get("damage_taken_multiplier", 1.0))
 
 	equipment_changed.emit()
-
+	armor_equipped.emit(item_id, item_data)
 
 func clear_armor() -> void:
 	equipped_armor_id = ""
 	equipped_armor_name = "Sin armadura"
 	armor_damage_taken_multiplier = 1.0
 	equipment_changed.emit()
-
+	armor_unequipped.emit()
 
 func modify_incoming_damage(amount: float) -> float:
 	return amount * armor_damage_taken_multiplier
