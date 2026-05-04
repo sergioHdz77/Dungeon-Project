@@ -345,9 +345,9 @@ func update_movement_animation() -> void:
 		return
 
 	if velocity.length() > 1.0:
-		play_animation("walk_lateral")
+		play_animation("walk_side")
 	else:
-		play_animation("idle")
+		play_animation("idle_side")
 
 
 func play_animation(animation_name: String, lock_duration: float = 0.0) -> void:

@@ -82,7 +82,7 @@ animations = [{
 "texture": SubResource("AtlasTexture_v42im")
 }],
 "loop": true,
-"name": &"idle",
+"name": &"idle_side",
 "speed": 5.0
 }, {
 "frames": [{
@@ -99,7 +99,7 @@ animations = [{
 "texture": SubResource("AtlasTexture_180ig")
 }],
 "loop": true,
-"name": &"walk_lateral",
+"name": &"walk_side",
 "speed": 5.0
 }]
 
@@ -115,7 +115,7 @@ script = SubResource("GDScript_p0vlq")
 texture_filter = 1
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_c3xxp")
-animation = &"walk_lateral"
+animation = &"idle_side"
 
 [node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
 
