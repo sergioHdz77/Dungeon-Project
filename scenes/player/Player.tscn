@@ -1,7 +1,8 @@
 [gd_scene format=3 uid="uid://8h3i1lsxrk0d"]
 
-[ext_resource type="Texture2D" uid="uid://baduvkt1wbtwl" path="res://art/playerGrey_up2.png" id="1_p0vlq"]
+[ext_resource type="Texture2D" uid="uid://bpjlr3b7gq0tu" path="res://assets/characters/player/player-idle-Sheet.png" id="1_524rm"]
 [ext_resource type="Script" uid="uid://5x1iekyf85fg" path="res://scripts/player/player_economy.gd" id="2_gfjak"]
+[ext_resource type="Texture2D" uid="uid://dgpqpjvipvfr" path="res://assets/characters/player/player-animation-walk-lado-Sheet.png" id="2_tpg5x"]
 [ext_resource type="Script" uid="uid://bu2ucfbbo8keg" path="res://scripts/player/player_combat.gd" id="3_4kuee"]
 [ext_resource type="Script" uid="uid://ceevpucsyjqkf" path="res://scripts/player/player_progression.gd" id="4_524rm"]
 
@@ -33,8 +34,77 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 "
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_v6fml"]
-radius = 4.3333335
+[sub_resource type="AtlasTexture" id="AtlasTexture_tpg5x"]
+atlas = ExtResource("1_524rm")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c3xxp"]
+atlas = ExtResource("1_524rm")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_npwbq"]
+atlas = ExtResource("1_524rm")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_v42im"]
+atlas = ExtResource("1_524rm")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pn6s4"]
+atlas = ExtResource("2_tpg5x")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7oing"]
+atlas = ExtResource("2_tpg5x")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5stf6"]
+atlas = ExtResource("2_tpg5x")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_180ig"]
+atlas = ExtResource("2_tpg5x")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_c3xxp"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tpg5x")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_c3xxp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_npwbq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_v42im")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pn6s4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7oing")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5stf6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_180ig")
+}],
+"loop": true,
+"name": &"walk_lateral",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_tpg5x"]
+size = Vector2(2.7083333, 6.291667)
 
 [node name="Player" type="CharacterBody2D" unique_id=1173866472]
 script = SubResource("GDScript_p0vlq")
@@ -42,20 +112,21 @@ script = SubResource("GDScript_p0vlq")
 [node name="Visuals" type="Node2D" parent="." unique_id=848307757]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals" unique_id=1317566803]
+texture_filter = 1
+scale = Vector2(3, 3)
+sprite_frames = SubResource("SpriteFrames_c3xxp")
+animation = &"walk_lateral"
 
 [node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
 
-[node name="WeaponVisuals" type="Node2D" parent="EquipmentVisuals" unique_id=1870725478]
+[node name="WeaponVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1870725478]
 
-[node name="ArmorVisuals" type="Node2D" parent="EquipmentVisuals" unique_id=1692163598]
-
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1205511733]
-visible = false
-texture = ExtResource("1_p0vlq")
+[node name="ArmorVisual" type="Node2D" parent="EquipmentVisuals" unique_id=1692163598]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
+position = Vector2(2.3841858e-07, -8)
 scale = Vector2(6, 6)
-shape = SubResource("CircleShape2D_v6fml")
+shape = SubResource("RectangleShape2D_tpg5x")
 
 [node name="Economy" type="Node" parent="." unique_id=1420025847]
 script = ExtResource("2_gfjak")

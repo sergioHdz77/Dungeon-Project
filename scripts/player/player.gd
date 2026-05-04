@@ -53,7 +53,7 @@ var armor_damage_taken_multiplier: float = 1.0
 
 # Mientras no tengamos sprites, seguimos dibujando el placeholder.
 # Cuando haya AnimatedSprite2D real, podremos ponerlo a false.
-@export var use_placeholder_drawing: bool = true
+@export var use_placeholder_drawing: bool = false
 
 # Tiempo mínimo que se mantiene una animación de daño antes de volver a idle/move.
 @export var hurt_animation_duration: float = 0.15
@@ -85,6 +85,9 @@ func _ready() -> void:
 	stats_changed.emit()
 	queue_redraw()
 
+	# Al empezar, reproducimos la animación idle lateral.
+	# De momento usamos idle_side porque solo tenemos el sprite lateral.
+	animated_sprite.play("idle")
 
 func _physics_process(delta: float) -> void:
 	if progression.is_dead:
@@ -342,7 +345,7 @@ func update_movement_animation() -> void:
 		return
 
 	if velocity.length() > 1.0:
-		play_animation("move")
+		play_animation("walk_lateral")
 	else:
 		play_animation("idle")
 
