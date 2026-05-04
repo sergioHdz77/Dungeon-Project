@@ -1,86 +1,57 @@
 extends Node
 
-# Componente de combate del jugador.
-#
-# Sistema actual:
-# - ataque melee manual
-# - arco de golpe frontal
-# - bloqueo direccional
-# - stamina de bloqueo
-#
-# - búsqueda automática de enemigos
+# Fachada/orquestador de combate del jugador.
+# Mantiene la API pública que usan Player, Movement, HUD, Equipment y DebugView.
+# La lógica detallada se delega en:
+# - Attack
+# - Block
 
-# -------------------------
-# ATAQUE MELEE
-# -------------------------
-
-@export var attack_damage: float = 20.0
-@export var attack_cooldown: float = 0.45
-@export var melee_range: float = 90.0
-@export var melee_arc_degrees: float = 120.0
-@export var melee_knockback_force: float = 350.0
-
-var attack_timer: float = 0.0
-
-# Dirección hacia la que mira/ataca/bloquea el jugador.
-var facing_direction: Vector2 = Vector2.RIGHT
-
-# Referencia al Player.
 var player: Node2D = null
 
+@onready var attack: Node = get_node_or_null("Attack")
+@onready var block: Node = get_node_or_null("Block")
 
-# -------------------------
-# DEBUG VISUAL DEL ATAQUE
-# -------------------------
+# Dirección compartida para ataque y bloqueo.
+var facing_direction: Vector2 = Vector2.RIGHT
 
-@export var attack_debug_duration: float = 0.12
+# Variables públicas sincronizadas para mantener compatibilidad con HUD/DebugView.
+var attack_damage: float = 0.0
+var attack_cooldown: float = 0.0
+var melee_range: float = 0.0
+var melee_arc_degrees: float = 0.0
+var melee_knockback_force: float = 0.0
 
 var attack_debug_timer: float = 0.0
 var last_attack_direction: Vector2 = Vector2.RIGHT
 
-
-# -------------------------
-# BLOQUEO
-# -------------------------
-
 var is_blocking: bool = false
-
-@export var block_damage_multiplier: float = 0.35
-@export var block_movement_multiplier: float = 0.45
-@export var block_arc_degrees: float = 140.0
-
-
-# -------------------------
-# STAMINA
-# -------------------------
-
-@export var max_stamina: float = 100.0
-@export var block_stamina_drain_per_second: float = 28.0
-@export var stamina_regen_per_second: float = 22.0
-@export var stamina_regen_delay: float = 0.45
-@export var minimum_stamina_to_block: float = 8.0
-
-var stamina: float = 100.0
-var stamina_regen_timer: float = 0.0
 
 
 func _ready() -> void:
 	player = get_parent() as Node2D
-	stamina = max_stamina
+
+	if attack != null and attack.has_method("setup"):
+		attack.setup(player)
+
+	if block != null and block.has_method("setup"):
+		block.setup(player)
+
+	_sync_public_state()
 
 
 func process_combat(delta: float) -> void:
 	if player == null:
 		return
 
-	if attack_timer > 0.0:
-		attack_timer -= delta
-
-	if attack_debug_timer > 0.0:
-		attack_debug_timer -= delta
-
 	update_facing_direction()
-	update_block_state(delta)
+
+	if attack != null and attack.has_method("process_attack_timers"):
+		attack.process_attack_timers(delta)
+
+	if block != null and block.has_method("process_block"):
+		block.process_block(delta, facing_direction)
+
+	_sync_public_state()
 
 	# Si está bloqueando, no puede atacar.
 	if is_blocking:
@@ -91,180 +62,127 @@ func process_combat(delta: float) -> void:
 
 
 func update_facing_direction() -> void:
-	# Usamos los mismos inputs de movimiento que el Player.
-	var input_dir: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var input_dir: Vector2 = Input.get_vector(
+		"move_left",
+		"move_right",
+		"move_up",
+		"move_down"
+	)
 
-	# Solo actualizamos dirección si el jugador se está moviendo.
-	# Si se queda quieto, conserva la última dirección.
 	if input_dir.length() > 0.0:
 		facing_direction = input_dir.normalized()
 
 
 func try_melee_attack() -> void:
-	if attack_timer > 0.0:
+	if attack == null:
 		return
 
-	attack_timer = attack_cooldown
-
-	last_attack_direction = facing_direction
-	attack_debug_timer = attack_debug_duration
-
-	var enemies := get_tree().get_nodes_in_group("enemies")
-
-	for enemy in enemies:
-		if not is_instance_valid(enemy):
-			continue
-
-		var enemy_2d := enemy as Node2D
-
-		if enemy_2d == null:
-			continue
-
-		if is_enemy_inside_melee_arc(enemy_2d):
-			if enemy_2d.has_method("take_damage"):
-				enemy_2d.call("take_damage", attack_damage)
-				apply_knockback_to_enemy(enemy_2d)
-				
-func apply_knockback_to_enemy(enemy: Node2D) -> void:
-	if player == null:
+	if not attack.has_method("try_melee_attack"):
 		return
 
-	if not enemy.has_method("apply_knockback"):
-		return
-
-	var direction: Vector2 = enemy.global_position - player.global_position
-
-	if direction.length() <= 0.01:
-		direction = facing_direction
-
-	enemy.call(
-		"apply_knockback",
-		direction.normalized(),
-		melee_knockback_force
-	)
-
-func is_enemy_inside_melee_arc(enemy: Node2D) -> bool:
-	var to_enemy: Vector2 = enemy.global_position - player.global_position
-	var distance: float = to_enemy.length()
-
-	if distance > melee_range:
-		return false
-
-	# Si está muy pegado al jugador, permitimos el golpe.
-	# Evita la sensación rara de tenerlo encima y fallar.
-	if distance <= 32.0:
-		return true
-
-	var direction_to_enemy: Vector2 = to_enemy.normalized()
-
-	var angle: float = facing_direction.angle_to(direction_to_enemy)
-	var angle_degrees: float = absf(rad_to_deg(angle))
-
-	return angle_degrees <= melee_arc_degrees / 2.0
+	attack.try_melee_attack(facing_direction)
+	_sync_public_state()
 
 
-# -------------------------
-# BLOQUEO / DAÑO
-# -------------------------
-
-func update_block_state(delta: float) -> void:
-	var wants_to_block: bool = Input.is_action_pressed("block")
-
-	if wants_to_block and stamina >= minimum_stamina_to_block:
-		is_blocking = true
-
-		stamina -= block_stamina_drain_per_second * delta
-		stamina = maxf(stamina, 0.0)
-
-		stamina_regen_timer = stamina_regen_delay
-
-		if stamina <= 0.0:
-			is_blocking = false
-
-		return
-
-	is_blocking = false
-
-	if stamina_regen_timer > 0.0:
-		stamina_regen_timer -= delta
-		return
-
-	if stamina < max_stamina:
-		stamina += stamina_regen_per_second * delta
-		stamina = minf(stamina, max_stamina)
-
-
-func get_modified_incoming_damage(amount: float, damage_source: Node2D = null) -> float:
-	if not is_blocking:
+func get_modified_incoming_damage(
+	amount: float,
+	damage_source: Node2D = null
+) -> float:
+	if block == null:
 		return amount
 
-	if damage_source == null:
-		return amount * block_damage_multiplier
+	if not block.has_method("get_modified_incoming_damage"):
+		return amount
 
-	if is_damage_source_in_front(damage_source):
-		return amount * block_damage_multiplier
-
-	return amount
-
-
-func is_damage_source_in_front(damage_source: Node2D) -> bool:
-	if player == null:
-		return false
-
-	var to_source: Vector2 = damage_source.global_position - player.global_position
-
-	if to_source.length() <= 0.01:
-		return true
-
-	var direction_to_source: Vector2 = to_source.normalized()
-
-	var angle: float = facing_direction.angle_to(direction_to_source)
-	var angle_degrees: float = absf(rad_to_deg(angle))
-
-	return angle_degrees <= block_arc_degrees / 2.0
+	return block.get_modified_incoming_damage(
+		amount,
+		damage_source,
+		facing_direction
+	)
 
 
 func get_movement_speed_multiplier() -> float:
-	if is_blocking:
-		return block_movement_multiplier
+	if block == null:
+		return 1.0
 
-	return 1.0
+	if not block.has_method("get_movement_speed_multiplier"):
+		return 1.0
 
+	return block.get_movement_speed_multiplier()
 
-# -------------------------
-# STAMINA GETTERS
-# -------------------------
 
 func get_stamina() -> float:
-	return stamina
+	if block != null and block.has_method("get_stamina"):
+		return block.get_stamina()
+
+	return 0.0
 
 
 func get_max_stamina() -> float:
-	return max_stamina
+	if block != null and block.has_method("get_max_stamina"):
+		return block.get_max_stamina()
+
+	return 0.0
 
 
 func get_stamina_ratio() -> float:
-	if max_stamina <= 0.0:
-		return 0.0
+	if block != null and block.has_method("get_stamina_ratio"):
+		return block.get_stamina_ratio()
 
-	return stamina / max_stamina
+	return 0.0
 
-
-# -------------------------
-# MODIFICADORES DE STATS
-# -------------------------
 
 func add_damage(amount: float) -> void:
-	attack_damage += amount
+	if attack != null and attack.has_method("add_damage"):
+		attack.add_damage(amount)
+
+	_sync_public_state()
 
 
 func multiply_cooldown(multiplier: float) -> void:
-	attack_cooldown *= multiplier
+	if attack != null and attack.has_method("multiply_cooldown"):
+		attack.multiply_cooldown(multiplier)
+
+	_sync_public_state()
 
 
 func add_range(amount: float) -> void:
-	melee_range += amount
+	if attack != null and attack.has_method("add_range"):
+		attack.add_range(amount)
+
+	_sync_public_state()
 
 
 func multiply_range(multiplier: float) -> void:
-	melee_range *= multiplier
+	if attack != null and attack.has_method("multiply_range"):
+		attack.multiply_range(multiplier)
+
+	_sync_public_state()
+
+
+func _sync_public_state() -> void:
+	if attack != null:
+		if "attack_damage" in attack:
+			attack_damage = attack.attack_damage
+
+		if "attack_cooldown" in attack:
+			attack_cooldown = attack.attack_cooldown
+
+		if "melee_range" in attack:
+			melee_range = attack.melee_range
+
+		if "melee_arc_degrees" in attack:
+			melee_arc_degrees = attack.melee_arc_degrees
+
+		if "melee_knockback_force" in attack:
+			melee_knockback_force = attack.melee_knockback_force
+
+		if "attack_debug_timer" in attack:
+			attack_debug_timer = attack.attack_debug_timer
+
+		if "last_attack_direction" in attack:
+			last_attack_direction = attack.last_attack_direction
+
+	if block != null:
+		if "is_blocking" in block:
+			is_blocking = block.is_blocking

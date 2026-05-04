@@ -10,7 +10,9 @@
 [ext_resource type="Script" uid="uid://ceevpucsyjqkf" path="res://scripts/player/player_progression.gd" id="4_524rm"]
 [ext_resource type="Texture2D" uid="uid://7m6dwm0upjpp" path="res://assets/characters/player/player-animation-walk-back-Sheet.png" id="5_180ig"]
 [ext_resource type="Texture2D" uid="uid://dsoleduns2e62" path="res://assets/characters/player/player-animation-walk-front-Sheet.png" id="6_20koh"]
+[ext_resource type="Script" uid="uid://bwwqlrep02kbw" path="res://scripts/player/player_attack.gd" id="11_8qjgm"]
 [ext_resource type="Script" uid="uid://c8nfb6rnoqq" path="res://scripts/player/player_movement.gd" id="11_ov1oi"]
+[ext_resource type="Script" uid="uid://hrbl4ncucx0n" path="res://scripts/player/player_block.gd" id="12_ejd4k"]
 [ext_resource type="Script" uid="uid://bboy7rh16ukh8" path="res://scripts/player/player_equipment.gd" id="12_rn7t0"]
 [ext_resource type="Script" uid="uid://wvb3f7f7ggji" path="res://scripts/player/player_visual_controller.gd" id="13_8qjgm"]
 [ext_resource type="Script" uid="uid://buundep3wwipj" path="res://scripts/player/player_debug_view.gd" id="14_ejd4k"]
@@ -249,6 +251,12 @@ script = ExtResource("2_gfjak")
 
 [node name="Combat" type="Node" parent="." unique_id=1107329975]
 script = ExtResource("3_4kuee")
+
+[node name="Attack" type="Node" parent="Combat" unique_id=1704303625]
+script = ExtResource("11_8qjgm")
+
+[node name="Block" type="Node" parent="Combat" unique_id=1447500424]
+script = ExtResource("12_ejd4k")
 
 [node name="Progression" type="Node" parent="." unique_id=99627898]
 script = ExtResource("4_524rm")
