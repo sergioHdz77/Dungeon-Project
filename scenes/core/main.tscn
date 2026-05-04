@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://sqom3s80cofr" path="res://scripts/world/map.gd" id="2_44pk5"]
 [ext_resource type="Script" uid="uid://crtk6hemjhxki" path="res://scripts/dungeon/dungeon_manager.gd" id="3_fu2j5"]
 [ext_resource type="PackedScene" uid="uid://8h3i1lsxrk0d" path="res://scenes/player/Player.tscn" id="3_phv0v"]
-[ext_resource type="Script" uid="uid://c0ywgwmhc3p7k" path="res://scripts/player/player.gd" id="4_jpx65"]
 [ext_resource type="PackedScene" uid="uid://f1qwwm0v8ok8" path="res://scenes/dungeon/rooms/start_room.tscn" id="4_ocd3q"]
 [ext_resource type="PackedScene" uid="uid://dkf454cjx2t0y" path="res://scenes/dungeon/rooms/combat_room_a.tscn" id="5_5xrq8"]
 [ext_resource type="PackedScene" uid="uid://ejdtkrqwu7x0" path="res://scenes/dungeon/rooms/boss_room.tscn" id="6_kbh5f"]
@@ -12,7 +11,9 @@
 [ext_resource type="PackedScene" uid="uid://cgigtht74ex30" path="res://scenes/dungeon/rooms/combat_room_b.tscn" id="7_ns4lk"]
 [ext_resource type="PackedScene" uid="uid://db52mu2amiva6" path="res://scenes/dungeon/rooms/combat_room_c.tscn" id="8_n74up"]
 [ext_resource type="Script" uid="uid://coevxxvue8878" path="res://scripts/ui/start_screen.gd" id="8_phv0v"]
+[ext_resource type="Script" uid="uid://e8xwg4nnum1o" path="res://scripts/run/run_session.gd" id="9_ns4lk"]
 [ext_resource type="Script" uid="uid://bumiy18calt12" path="res://scripts/ui/run_end_screen.gd" id="10_fu2j5"]
+[ext_resource type="Script" uid="uid://da7utk5emdcop" path="res://scripts/run/equipment_menu_service.gd" id="10_n74up"]
 [ext_resource type="Script" uid="uid://j74wxixg7r17" path="res://scripts/ui/dungeon_complete_screen.gd" id="13_kbh5f"]
 
 [node name="Main" type="Node2D" unique_id=2000043926]
@@ -33,12 +34,13 @@ combat_room_scenes = Array[PackedScene]([ExtResource("5_5xrq8"), ExtResource("7_
 script = ExtResource("2_44pk5")
 map_size = Vector2(720, 420)
 
+[node name="RunSession" type="Node" parent="." unique_id=1465100974]
+script = ExtResource("9_ns4lk")
+
+[node name="EquipmentMenuService" type="Node" parent="." unique_id=1766074269]
+script = ExtResource("10_n74up")
+
 [node name="Player" parent="." unique_id=1173866472 instance=ExtResource("3_phv0v")]
-script = ExtResource("4_jpx65")
-speed = 220.0
-map_half_size = Vector2(1200, 800)
-use_placeholder_drawing = true
-hurt_animation_duration = 0.15
 
 [node name="Camera2D" type="Camera2D" parent="Player" unique_id=1240053873]
 

@@ -10,6 +10,10 @@
 [ext_resource type="Script" uid="uid://ceevpucsyjqkf" path="res://scripts/player/player_progression.gd" id="4_524rm"]
 [ext_resource type="Texture2D" uid="uid://7m6dwm0upjpp" path="res://assets/characters/player/player-animation-walk-back-Sheet.png" id="5_180ig"]
 [ext_resource type="Texture2D" uid="uid://dsoleduns2e62" path="res://assets/characters/player/player-animation-walk-front-Sheet.png" id="6_20koh"]
+[ext_resource type="Script" uid="uid://c8nfb6rnoqq" path="res://scripts/player/player_movement.gd" id="11_ov1oi"]
+[ext_resource type="Script" uid="uid://bboy7rh16ukh8" path="res://scripts/player/player_equipment.gd" id="12_rn7t0"]
+[ext_resource type="Script" uid="uid://wvb3f7f7ggji" path="res://scripts/player/player_visual_controller.gd" id="13_8qjgm"]
+[ext_resource type="Script" uid="uid://buundep3wwipj" path="res://scripts/player/player_debug_view.gd" id="14_ejd4k"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ov1oi"]
 atlas = ExtResource("2_7oing")
@@ -217,10 +221,6 @@ size = Vector2(2.7083333, 6.291667)
 
 [node name="Player" type="CharacterBody2D" unique_id=1173866472]
 script = ExtResource("1_c3xxp")
-speed = null
-map_half_size = null
-use_placeholder_drawing = null
-hurt_animation_duration = null
 
 [node name="Visuals" type="Node2D" parent="." unique_id=848307757]
 
@@ -241,6 +241,9 @@ position = Vector2(2.3841858e-07, -8)
 scale = Vector2(6, 6)
 shape = SubResource("RectangleShape2D_tpg5x")
 
+[node name="DebugView" type="Node2D" parent="." unique_id=2041219675]
+script = ExtResource("14_ejd4k")
+
 [node name="Economy" type="Node" parent="." unique_id=1420025847]
 script = ExtResource("2_gfjak")
 
@@ -250,3 +253,12 @@ script = ExtResource("3_4kuee")
 [node name="Progression" type="Node" parent="." unique_id=99627898]
 script = ExtResource("4_524rm")
 max_health = 900.0
+
+[node name="Movement" type="Node" parent="." unique_id=1962336015]
+script = ExtResource("11_ov1oi")
+
+[node name="Equipment" type="Node" parent="." unique_id=1309729321]
+script = ExtResource("12_rn7t0")
+
+[node name="VisualController" type="Node" parent="." unique_id=1788622677]
+script = ExtResource("13_8qjgm")
