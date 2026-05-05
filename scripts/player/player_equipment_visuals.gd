@@ -15,6 +15,7 @@ extends Node2D
 
 @onready var weapon_back_socket: Node2D = get_node_or_null("../EquipmentBackVisuals/WeaponBackSocket")
 @onready var weapon_back_visual: Sprite2D = get_node_or_null("../EquipmentBackVisuals/WeaponBackSocket/WeaponBackVisual")
+@onready var weapon_back_animation_player: AnimationPlayer = get_node_or_null("../EquipmentBackVisuals/WeaponBackAnimationPlayer")
 
 # Si ya tienes un WeaponAnimationPlayer, lo dejamos preparado.
 @onready var weapon_animation_player: AnimationPlayer = get_node_or_null("WeaponAnimationPlayer")
@@ -125,14 +126,12 @@ func show_armor(armor_id: String, armor_data: Dictionary) -> void:
 func clear_weapon() -> void:
 	current_weapon_entry = null
 
-	if weapon_visual == null:
-		return
-
-	weapon_visual.texture = null
-	weapon_visual.visible = false
-	weapon_visual.offset = Vector2.ZERO
-	weapon_visual.position = Vector2.ZERO
-	weapon_visual.rotation_degrees = 0.0
+	if weapon_visual != null:
+		weapon_visual.texture = null
+		weapon_visual.visible = false
+		weapon_visual.offset = Vector2.ZERO
+		weapon_visual.position = Vector2.ZERO
+		weapon_visual.rotation_degrees = 0.0
 
 	if weapon_socket != null:
 		weapon_socket.position = Vector2.ZERO
@@ -150,7 +149,7 @@ func clear_weapon() -> void:
 		weapon_back_socket.position = Vector2.ZERO
 		weapon_back_socket.rotation_degrees = 0.0
 		weapon_back_socket.scale = Vector2.ONE
-		
+
 	print("EquipmentVisuals: arma visual quitada")
 
 
@@ -184,35 +183,68 @@ func get_visual_entry_for_id(
 
 
 func play_weapon_attack(direction: Vector2) -> void:
+	if current_weapon_entry == null:
+		return
+
+	# Coloca la capa correcta antes de animar:
+	# - arriba usa arma trasera
+	# - frente/lateral usa arma delantera
+	apply_weapon_socket_idle_pose(direction)
+
+	var animation_name: String = get_weapon_attack_animation_name(direction)
+
+	if is_back_direction(direction):
+		play_back_weapon_attack(animation_name)
+	else:
+		play_front_weapon_attack(animation_name)
+
+func play_front_weapon_attack(animation_name: String) -> void:
 	if weapon_visual == null:
 		return
 
 	if not weapon_visual.visible:
 		return
 
-	if weapon_socket == null:
-		return
-
-	# Antes de animar, colocamos el socket en una posición base según dirección.
-	apply_weapon_socket_idle_pose(direction)
-
 	if weapon_animation_player == null:
 		return
 
-	var animation_name: String = get_weapon_attack_animation_name(direction)
-
 	if not weapon_animation_player.has_animation(animation_name):
-		print("EquipmentVisuals: no existe animación de arma: ", animation_name)
+		print("EquipmentVisuals: no existe animación delantera de arma: ", animation_name)
 		return
 
 	weapon_animation_player.stop()
 	weapon_animation_player.play(animation_name)
 
-func update_weapon_idle_pose(direction: Vector2) -> void:
-	if weapon_visual == null:
+
+func play_back_weapon_attack(animation_name: String) -> void:
+	if weapon_back_visual == null:
 		return
 
-	if not weapon_visual.visible:
+	if not weapon_back_visual.visible:
+		return
+
+	if weapon_back_animation_player == null:
+		print("EquipmentVisuals: falta WeaponBackAnimationPlayer.")
+		return
+
+	if not weapon_back_animation_player.has_animation(animation_name):
+		print("EquipmentVisuals: no existe animación trasera de arma: ", animation_name)
+		return
+
+	weapon_back_animation_player.stop()
+	weapon_back_animation_player.play(animation_name)
+
+
+func is_back_direction(direction: Vector2) -> bool:
+	if direction.length() <= 0.01:
+		return false
+
+	var normalized_direction: Vector2 = direction.normalized()
+
+	return absf(normalized_direction.y) > absf(normalized_direction.x) and normalized_direction.y < 0.0
+
+func update_weapon_idle_pose(direction: Vector2) -> void:
+	if current_weapon_entry == null:
 		return
 
 	apply_weapon_socket_idle_pose(direction)

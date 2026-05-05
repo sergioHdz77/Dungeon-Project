@@ -23,6 +23,67 @@
 [ext_resource type="Script" uid="uid://dxbesdydeqic" path="res://scripts/player/equipment_visual_entry.gd" id="18_pi3ps"]
 [ext_resource type="Texture2D" uid="uid://d2cbovg4rq41g" path="res://assets/weapons/rusty_sword.png" id="19_pi3ps"]
 
+[sub_resource type="Animation" id="Animation_x3qp0"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponBackSocket:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(-3, -5)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponBackSocket:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.43633232]
+}
+
+[sub_resource type="Animation" id="Animation_76i7i"]
+resource_name = "weapon_back_socket"
+length = 0.16
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponBackSocket:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.16),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(-3, -5), Vector2(-3, -12), Vector2(-3, -5)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponBackSocket:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.16),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.43633232, -0.43633232, 0.43633232]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_mndc6"]
+_data = {
+&"RESET": SubResource("Animation_x3qp0"),
+&"weapon_attack_back": SubResource("Animation_76i7i")
+}
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_5ttev"]
 atlas = ExtResource("2_p1lr0")
 region = Rect2(0, 0, 32, 32)
@@ -315,34 +376,6 @@ tracks/1/keys = {
 "values": [0.0]
 }
 
-[sub_resource type="Animation" id="Animation_ro0t8"]
-resource_name = "weapon_attack_back"
-length = 0.16
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("WeaponSocket:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.08, 0.16),
-"transitions": PackedFloat32Array(1, 1, 1),
-"update": 0,
-"values": [Vector2(-3, -5), Vector2(-3, -12), Vector2(-3, -5)]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("WeaponSocket:rotation")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.08),
-"transitions": PackedFloat32Array(1, 1),
-"update": 0,
-"values": [0.43633232, -0.43633232]
-}
-
 [sub_resource type="Animation" id="Animation_8nn5r"]
 resource_name = "weapon_attack_front"
 length = 0.16
@@ -402,7 +435,6 @@ tracks/1/keys = {
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_x3qp0"]
 _data = {
 &"RESET": SubResource("Animation_p1lr0"),
-&"weapon_attack_back": SubResource("Animation_ro0t8"),
 &"weapon_attack_front": SubResource("Animation_8nn5r"),
 &"weapon_attack_side": SubResource("Animation_kvwax")
 }
@@ -414,10 +446,18 @@ size = Vector2(2.7083333, 6.291667)
 script = ExtResource("1_c3xxp")
 
 [node name="EquipmentBackVisuals" type="Node2D" parent="." unique_id=99627934]
+texture_filter = 1
 
 [node name="WeaponBackSocket" type="Node2D" parent="EquipmentBackVisuals" unique_id=1602372363]
+position = Vector2(-3, -5)
+rotation = 0.43633232
 
 [node name="WeaponBackVisual" type="Sprite2D" parent="EquipmentBackVisuals/WeaponBackSocket" unique_id=1088030083]
+position = Vector2(-19, -5)
+scale = Vector2(3, 3)
+
+[node name="WeaponBackAnimationPlayer" type="AnimationPlayer" parent="EquipmentBackVisuals" unique_id=143675718]
+libraries/ = SubResource("AnimationLibrary_mndc6")
 
 [node name="Visuals" type="Node2D" parent="." unique_id=848307757]
 
