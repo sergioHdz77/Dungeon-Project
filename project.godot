@@ -18,6 +18,10 @@ config/features=PackedStringArray("4.6", "Mobile")
 
 SaveManager="*uid://h1772y7h71bx"
 
+[display]
+
+window/size/always_on_top=true
+
 [global_group]
 
 enemies=""
