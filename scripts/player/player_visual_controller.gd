@@ -44,6 +44,7 @@ func process_visuals(delta: float) -> void:
 
 	_update_visual_direction_from_velocity()
 	_update_movement_animation()
+	update_equipment_idle_pose()
 
 func play_attack(attack_direction: Vector2) -> void:
 	_set_visual_direction_from_vector(attack_direction)
@@ -119,7 +120,20 @@ func _update_movement_animation() -> void:
 	else:
 		_play_idle_animation()
 
+func update_equipment_idle_pose() -> void:
+	# Si hay animación bloqueada, normalmente es ataque, hurt o death.
+	# No queremos que la pose idle del arma pise el WeaponAnimationPlayer.
+	if animation_lock_timer > 0.0:
+		return
 
+	if equipment_visuals == null:
+		return
+
+	if not equipment_visuals.has_method("update_weapon_idle_pose"):
+		return
+
+	equipment_visuals.update_weapon_idle_pose(visual_facing_direction)
+	
 func _play_walk_animation() -> void:
 	if visual_facing_direction == Vector2.UP:
 		play_animation_with_fallback("walk_back", "walk_side")

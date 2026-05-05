@@ -175,6 +175,14 @@ func play_weapon_attack(direction: Vector2) -> void:
 	weapon_animation_player.stop()
 	weapon_animation_player.play(animation_name)
 
+func update_weapon_idle_pose(direction: Vector2) -> void:
+	if weapon_visual == null:
+		return
+
+	if not weapon_visual.visible:
+		return
+
+	apply_weapon_socket_idle_pose(direction)
 
 func apply_weapon_socket_idle_pose(direction: Vector2) -> void:
 	if weapon_socket == null:
@@ -213,8 +221,7 @@ func apply_weapon_socket_idle_pose(direction: Vector2) -> void:
 
 	if current_weapon_entry != null:
 		weapon_socket.rotation_degrees = current_weapon_entry.idle_rotation_degrees
-
-
+	
 func get_weapon_attack_animation_name(direction: Vector2) -> String:
 	if direction.length() <= 0.01:
 		return "weapon_attack_side"
