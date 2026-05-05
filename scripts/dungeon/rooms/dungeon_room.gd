@@ -16,6 +16,8 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 # - mantiene exit_requested antiguo sin dirección
 # - añade directional_exit_requested(direction) para mapa procedural real
 
+@onready var enemy_spawner: Node = get_node_or_null("EnemySpawner")
+
 signal room_cleared
 
 # Señal antigua.
@@ -72,6 +74,52 @@ var alive_enemies: int = 0
 var room_is_cleared: bool = false
 
 
+func setup_enemy_spawner() -> void:
+	if enemy_spawner == null:
+		return
+
+	if enemy_spawner.has_method("setup"):
+		enemy_spawner.setup(
+			self,
+			player,
+			difficulty,
+			enemy_scene,
+			enemy_scenes
+		)
+
+	if enemy_spawner.has_signal("enemy_removed"):
+		var callback := Callable(self, "_on_enemy_spawner_enemy_removed")
+
+		if not enemy_spawner.is_connected("enemy_removed", callback):
+			enemy_spawner.connect("enemy_removed", callback)
+
+
+func room_has_any_enemy_scene() -> bool:
+	if enemy_spawner != null and enemy_spawner.has_method("has_any_enemy_scene"):
+		return enemy_spawner.has_any_enemy_scene()
+
+	return has_any_enemy_scene()
+
+
+func spawn_room_enemies() -> int:
+	if enemy_spawner == null:
+		return 0
+
+	if not enemy_spawner.has_method("spawn_enemies"):
+		return 0
+
+	return enemy_spawner.spawn_enemies()
+
+
+func _on_enemy_spawner_enemy_removed(remaining_enemies: int) -> void:
+	alive_enemies = remaining_enemies
+
+	print("Enemigo eliminado. Quedan: ", alive_enemies)
+
+	if alive_enemies <= 0:
+		print("Sala limpiada: ", name)
+		mark_room_as_cleared()
+
 # -------------------------------------------------------------------
 # SETUP DE SALA
 # -------------------------------------------------------------------
@@ -79,31 +127,30 @@ var room_is_cleared: bool = false
 func setup_room(new_player: Node2D, new_difficulty: int, already_cleared: bool = false) -> void:
 	player = new_player
 	difficulty = new_difficulty
-
 	room_is_cleared = false
 	alive_enemies = 0
 
 	setup_exit_doors()
+	setup_enemy_spawner()
 
 	# Si esta sala ya estaba limpia, no volvemos a generar enemigos ni loot.
-	# Esto será importante al volver hacia atrás o entrar en ramas laterales.
+	# Esto es importante al volver hacia atrás o entrar en ramas laterales.
 	if already_cleared:
 		room_is_cleared = true
 		unlock_exit_doors()
 		return
 
-	if not has_any_enemy_scene():
+	if not room_has_any_enemy_scene():
 		# Sala segura sin enemigos, por ejemplo StartRoom.
 		mark_room_as_cleared()
 		return
 
-	spawn_enemies()
+	alive_enemies = spawn_room_enemies()
 
 	if alive_enemies <= 0:
 		mark_room_as_cleared()
 	else:
 		lock_exit_doors()
-
 
 func has_any_enemy_scene() -> bool:
 	if enemy_scene != null:

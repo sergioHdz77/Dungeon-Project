@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bfdx56kgv615u" path="res://scenes/enemies/enemy_fast.tscn" id="3_4imj3"]
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="3_fnekb"]
 [ext_resource type="PackedScene" uid="uid://rpd5uj63mqxa" path="res://scenes/enemies/enemy_tank.tscn" id="4_u7kwx"]
+[ext_resource type="Script" uid="uid://51f8fy1da0xx" path="res://scripts/dungeon/rooms/enemy_spawner.gd" id="5_u7kwx"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fnekb"]
 
@@ -15,6 +16,9 @@ enemy_scenes = Array[PackedScene]([ExtResource("2_fnekb"), ExtResource("3_4imj3"
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1688751154]
 position = Vector2(0, 120)
+
+[node name="EnemySpawner" type="Node" parent="." unique_id=1037263221]
+script = ExtResource("5_u7kwx")
 
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=2076010589]
 
