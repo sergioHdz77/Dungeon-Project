@@ -3,9 +3,9 @@ extends Line2D
 # Estela pixelada simple para el arma.
 # Sigue la posición global de un Marker2D colocado en la punta del arma.
 
-@export var max_points: int = 4
-@export var sample_interval: float = 0.025
-@export var fade_speed: float = 40.0
+@export var max_points: int = 9
+@export var sample_interval: float = 0.012
+@export var fade_speed: float = 28.0
 
 var target_tip: Marker2D = null
 var is_active: bool = false
@@ -24,6 +24,7 @@ func start_trail() -> void:
 	visible = true
 	clear_points()
 	sample_timer = 0.0
+	add_tip_point()
 
 
 func stop_trail() -> void:
@@ -65,6 +66,19 @@ func update_active_trail(delta: float) -> void:
 
 	while get_point_count() > max_points:
 		remove_point(0)
+
+
+func add_tip_point() -> void:
+	if target_tip == null:
+		return
+
+	var local_tip_position: Vector2 = to_local(target_tip.global_position)
+
+	# Redondeo para que el rastro quede mas pixelado.
+	local_tip_position.x = round(local_tip_position.x)
+	local_tip_position.y = round(local_tip_position.y)
+
+	add_point(local_tip_position)
 
 
 func fade_trail(delta: float) -> void:

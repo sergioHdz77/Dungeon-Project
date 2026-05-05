@@ -51,6 +51,8 @@ extends Node2D
 
 var current_weapon_entry: EquipmentVisualEntry = null
 var current_armor_entry: EquipmentVisualEntry = null
+var front_attack_tween: Tween = null
+var back_attack_tween: Tween = null
 
 func _ready() -> void:
 	sync_back_visuals_transform()
@@ -226,16 +228,25 @@ func play_weapon_attack(direction: Vector2) -> void:
 	var animation_name: String = get_weapon_attack_animation_name(direction)
 
 	if is_back_direction(direction):
-		play_back_weapon_attack(animation_name)
+		play_back_weapon_attack(animation_name, direction)
 	else:
-		play_front_weapon_attack(animation_name)
+		play_front_weapon_attack(animation_name, direction)
 
-func play_front_weapon_attack(animation_name: String) -> void:
+func play_front_weapon_attack(animation_name: String, direction: Vector2) -> void:
 	if weapon_visual == null:
 		return
 
 	if not weapon_visual.visible:
 		return
+
+	if weapon_trail != null and weapon_trail.has_method("start_trail"):
+		weapon_trail.start_trail()
+
+	if weapon_animation_player != null and weapon_animation_player.has_animation(animation_name):
+		weapon_animation_player.stop()
+
+	play_procedural_weapon_arc(weapon_socket, weapon_trail, direction, false)
+	return
 
 	if weapon_animation_player == null:
 		return
@@ -251,12 +262,21 @@ func play_front_weapon_attack(animation_name: String) -> void:
 	weapon_animation_player.play(animation_name)
 
 
-func play_back_weapon_attack(animation_name: String) -> void:
+func play_back_weapon_attack(animation_name: String, direction: Vector2) -> void:
 	if weapon_back_visual == null:
 		return
 
 	if not weapon_back_visual.visible:
 		return
+
+	if weapon_back_trail != null and weapon_back_trail.has_method("start_trail"):
+		weapon_back_trail.start_trail()
+
+	if weapon_back_animation_player != null and weapon_back_animation_player.has_animation(animation_name):
+		weapon_back_animation_player.stop()
+
+	play_procedural_weapon_arc(weapon_back_socket, weapon_back_trail, direction, true)
+	return
 
 	if weapon_back_animation_player == null:
 		print("EquipmentVisuals: falta WeaponBackAnimationPlayer.")
@@ -271,6 +291,102 @@ func play_back_weapon_attack(animation_name: String) -> void:
 
 	weapon_back_animation_player.stop()
 	weapon_back_animation_player.play(animation_name)
+
+
+func play_procedural_weapon_arc(
+	socket: Node2D,
+	trail: Line2D,
+	direction: Vector2,
+	use_back_socket: bool
+) -> void:
+	if socket == null:
+		return
+
+	var attack_direction: Vector2 = Vector2.RIGHT
+	if direction.length() > 0.01:
+		attack_direction = direction.normalized()
+
+	var poses: Array[Dictionary] = get_weapon_arc_poses(attack_direction, use_back_socket)
+	if poses.size() < 4:
+		return
+
+	var existing_tween: Tween = back_attack_tween if use_back_socket else front_attack_tween
+	if existing_tween != null:
+		existing_tween.kill()
+
+	socket.position = poses[0]["position"]
+	socket.rotation_degrees = poses[0]["rotation_degrees"]
+	socket.scale = poses[0]["scale"]
+
+	if trail != null and trail.has_method("start_trail"):
+		trail.start_trail()
+
+	var tween: Tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(socket, "position", poses[1]["position"], 0.045)
+	tween.parallel().tween_property(socket, "rotation_degrees", poses[1]["rotation_degrees"], 0.045)
+	tween.parallel().tween_property(socket, "scale", poses[1]["scale"], 0.045)
+	tween.tween_callback(Callable(self, "trigger_attack_hit_frame"))
+	tween.tween_property(socket, "position", poses[2]["position"], 0.07)
+	tween.parallel().tween_property(socket, "rotation_degrees", poses[2]["rotation_degrees"], 0.07)
+	tween.parallel().tween_property(socket, "scale", poses[2]["scale"], 0.07)
+	tween.tween_property(socket, "position", poses[3]["position"], 0.055)
+	tween.parallel().tween_property(socket, "rotation_degrees", poses[3]["rotation_degrees"], 0.055)
+	tween.parallel().tween_property(socket, "scale", poses[3]["scale"], 0.055)
+	tween.tween_callback(Callable(self, "_finish_weapon_arc").bind(trail, use_back_socket))
+
+	if use_back_socket:
+		back_attack_tween = tween
+	else:
+		front_attack_tween = tween
+
+
+func get_weapon_arc_poses(direction: Vector2, use_back_socket: bool) -> Array[Dictionary]:
+	var idle_rotation: float = 0.0
+	if current_weapon_entry != null:
+		idle_rotation = current_weapon_entry.idle_rotation_degrees
+
+	if use_back_socket:
+		return [
+			{"position": weapon_socket_back_position + Vector2(-8, -3), "rotation_degrees": idle_rotation + 125.0, "scale": Vector2.ONE},
+			{"position": weapon_socket_back_position + Vector2(-3, -11), "rotation_degrees": idle_rotation + 35.0, "scale": Vector2.ONE},
+			{"position": weapon_socket_back_position + Vector2(8, -6), "rotation_degrees": idle_rotation - 75.0, "scale": Vector2.ONE},
+			{"position": weapon_socket_back_position, "rotation_degrees": idle_rotation, "scale": Vector2.ONE}
+		]
+
+	if absf(direction.x) >= absf(direction.y):
+		if direction.x < 0.0:
+			return [
+				{"position": weapon_socket_side_left_position + Vector2(4, -7), "rotation_degrees": idle_rotation - 105.0, "scale": Vector2(-1.0, 1.0)},
+				{"position": weapon_socket_side_left_position + Vector2(-4, -3), "rotation_degrees": idle_rotation - 20.0, "scale": Vector2(-1.0, 1.0)},
+				{"position": weapon_socket_side_left_position + Vector2(1, 8), "rotation_degrees": idle_rotation + 85.0, "scale": Vector2(-1.0, 1.0)},
+				{"position": weapon_socket_side_left_position, "rotation_degrees": idle_rotation, "scale": Vector2(-1.0, 1.0)}
+			]
+
+		return [
+			{"position": weapon_socket_side_right_position + Vector2(-4, -7), "rotation_degrees": idle_rotation - 105.0, "scale": Vector2.ONE},
+			{"position": weapon_socket_side_right_position + Vector2(4, -3), "rotation_degrees": idle_rotation - 20.0, "scale": Vector2.ONE},
+			{"position": weapon_socket_side_right_position + Vector2(-1, 8), "rotation_degrees": idle_rotation + 85.0, "scale": Vector2.ONE},
+			{"position": weapon_socket_side_right_position, "rotation_degrees": idle_rotation, "scale": Vector2.ONE}
+		]
+
+	return [
+		{"position": weapon_socket_front_position + Vector2(-8, 3), "rotation_degrees": idle_rotation - 145.0, "scale": Vector2.ONE},
+		{"position": weapon_socket_front_position + Vector2(0, 10), "rotation_degrees": idle_rotation - 55.0, "scale": Vector2.ONE},
+		{"position": weapon_socket_front_position + Vector2(10, 4), "rotation_degrees": idle_rotation + 55.0, "scale": Vector2.ONE},
+		{"position": weapon_socket_front_position, "rotation_degrees": idle_rotation, "scale": Vector2.ONE}
+	]
+
+
+func _finish_weapon_arc(trail: Line2D, use_back_socket: bool) -> void:
+	if trail != null and trail.has_method("stop_trail"):
+		trail.stop_trail()
+
+	if use_back_socket:
+		back_attack_tween = null
+	else:
+		front_attack_tween = null
 
 
 func is_back_direction(direction: Vector2) -> bool:

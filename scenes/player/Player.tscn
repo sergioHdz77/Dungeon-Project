@@ -506,7 +506,8 @@ libraries/ = SubResource("AnimationLibrary_mndc6")
 
 [node name="WeaponBackTrail" type="Line2D" parent="EquipmentBackVisuals" unique_id=265802097]
 visible = false
-width = 3.0
+width = 5.0
+default_color = Color(1, 0.92, 0.35, 0.82)
 script = ExtResource("14_ro0t8")
 
 [node name="Visuals" type="Node2D" parent="." unique_id=848307757]
@@ -544,7 +545,8 @@ libraries/ = SubResource("AnimationLibrary_x3qp0")
 
 [node name="WeaponTrail" type="Line2D" parent="EquipmentVisuals" unique_id=1335228116]
 visible = false
-width = 3.0
+width = 5.0
+default_color = Color(1, 0.92, 0.35, 0.82)
 script = ExtResource("14_ro0t8")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
