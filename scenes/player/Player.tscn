@@ -78,6 +78,20 @@ tracks/1/keys = {
 "update": 0,
 "values": [0.43633232, -0.43633232, 0.43633232]
 }
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("../EquipmentVisuals")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.06666667),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"trigger_attack_hit_frame"
+}]
+}
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_mndc6"]
 _data = {
@@ -404,6 +418,20 @@ tracks/1/keys = {
 "update": 0,
 "values": [-0.43633232, 0.43633232, -0.43633232]
 }
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.06666667),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"trigger_attack_hit_frame"
+}]
+}
 
 [sub_resource type="Animation" id="Animation_kvwax"]
 resource_name = "weapon_attack_side"
@@ -431,6 +459,20 @@ tracks/1/keys = {
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [0.0, 0.7853982, -0.61086524]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.06666667),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"trigger_attack_hit_frame"
+}]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_x3qp0"]
@@ -488,6 +530,8 @@ weapon_socket_front_position = Vector2(-13, -3)
 [node name="WeaponSocket" type="Node2D" parent="EquipmentVisuals" unique_id=578468954]
 
 [node name="WeaponVisual" type="Sprite2D" parent="EquipmentVisuals/WeaponSocket" unique_id=1218636856]
+texture_filter = 1
+texture = ExtResource("19_pi3ps")
 
 [node name="WeaponTip" type="Marker2D" parent="EquipmentVisuals/WeaponSocket/WeaponVisual" unique_id=657275814]
 position = Vector2(16, 0)

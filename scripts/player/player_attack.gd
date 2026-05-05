@@ -2,6 +2,12 @@ extends Node
 
 # Componente responsable SOLO del ataque melee del jugador.
 # No gestiona bloqueo, stamina, vida, equipo ni movimiento.
+#
+# Flujo:
+# 1. try_melee_attack() inicia el ataque y guarda dirección.
+# 2. La animación visual se reproduce desde PlayerVisualController.
+# 3. En el frame de impacto, se llama a apply_pending_attack_hit().
+# 4. Si el frame no se llama por algún error de animación, hay fallback automático.
 
 signal attack_performed
 
@@ -10,14 +16,22 @@ signal attack_performed
 @export var melee_range: float = 90.0
 @export var melee_arc_degrees: float = 120.0
 @export var melee_knockback_force: float = 350.0
-
 @export var attack_debug_duration: float = 0.12
+
+# Fallback de seguridad.
+# Si el AnimationPlayer no llama al hit frame, el golpe se aplica igualmente.
+@export var fallback_hit_delay: float = 0.12
 
 var player: Node2D = null
 
 var attack_timer: float = 0.0
 var attack_debug_timer: float = 0.0
 var last_attack_direction: Vector2 = Vector2.RIGHT
+
+var has_pending_attack_hit: bool = false
+var attack_hit_applied: bool = false
+var pending_attack_direction: Vector2 = Vector2.RIGHT
+var pending_hit_timer: float = 0.0
 
 
 func setup(owner_player: Node2D) -> void:
@@ -30,6 +44,12 @@ func process_attack_timers(delta: float) -> void:
 
 	if attack_debug_timer > 0.0:
 		attack_debug_timer -= delta
+
+	if has_pending_attack_hit and not attack_hit_applied:
+		pending_hit_timer -= delta
+
+		if pending_hit_timer <= 0.0:
+			apply_pending_attack_hit()
 
 
 func try_melee_attack(facing_direction: Vector2) -> bool:
@@ -45,6 +65,27 @@ func try_melee_attack(facing_direction: Vector2) -> bool:
 	last_attack_direction = attack_direction
 	attack_debug_timer = attack_debug_duration
 
+	has_pending_attack_hit = true
+	attack_hit_applied = false
+	pending_attack_direction = attack_direction
+	pending_hit_timer = fallback_hit_delay
+
+	return true
+
+
+func apply_pending_attack_hit() -> void:
+	if player == null:
+		return
+
+	if not has_pending_attack_hit:
+		return
+
+	if attack_hit_applied:
+		return
+
+	attack_hit_applied = true
+	has_pending_attack_hit = false
+
 	var enemies: Array = get_tree().get_nodes_in_group("enemies")
 
 	for enemy: Node in enemies:
@@ -56,14 +97,13 @@ func try_melee_attack(facing_direction: Vector2) -> bool:
 		if enemy_2d == null:
 			continue
 
-		if is_enemy_inside_melee_arc(enemy_2d, attack_direction):
+		if is_enemy_inside_melee_arc(enemy_2d, pending_attack_direction):
 			if enemy_2d.has_method("take_damage"):
 				enemy_2d.call("take_damage", attack_damage)
 
-			apply_knockback_to_enemy(enemy_2d, attack_direction)
+			apply_knockback_to_enemy(enemy_2d, pending_attack_direction)
 
 	attack_performed.emit()
-	return true
 
 
 func is_enemy_inside_melee_arc(enemy: Node2D, attack_direction: Vector2) -> bool:

@@ -123,6 +123,15 @@ func _on_combat_attack_started(attack_direction: Vector2) -> void:
 	if visual_controller.has_method("play_attack"):
 		visual_controller.play_attack(attack_direction)
 		
+func trigger_attack_hit_frame() -> void:
+	if combat == null:
+		return
+
+	if not combat.has_method("apply_attack_hit_frame"):
+		return
+
+	combat.apply_attack_hit_frame()
+		
 # -------------------------------------------------------------------
 # API pública para drops / enemigos / sistemas externos
 # -------------------------------------------------------------------

@@ -88,7 +88,16 @@ func try_melee_attack() -> void:
 
 	if attack_was_started:
 		attack_started.emit(facing_direction)
+		
+func apply_attack_hit_frame() -> void:
+	if attack == null:
+		return
 
+	if not attack.has_method("apply_pending_attack_hit"):
+		return
+
+	attack.apply_pending_attack_hit()
+	_sync_public_state()
 
 func get_modified_incoming_damage(
 	amount: float,
