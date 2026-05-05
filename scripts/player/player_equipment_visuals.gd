@@ -32,7 +32,6 @@ extends Node2D
 
 @export var weapon_socket_side_z_index: int = 2
 @export var weapon_socket_front_z_index: int = 2
-@export var weapon_socket_back_z_index: int = -1
 
 var current_weapon_entry: EquipmentVisualEntry = null
 var current_armor_entry: EquipmentVisualEntry = null

@@ -455,8 +455,6 @@ position = Vector2(-3, -5)
 rotation = 0.43633232
 
 [node name="WeaponBackVisual" type="Sprite2D" parent="EquipmentBackVisuals/WeaponBackSocket" unique_id=1088030083]
-position = Vector2(-20.455, -5)
-scale = Vector2(3, 3)
 
 [node name="WeaponBackAnimationPlayer" type="AnimationPlayer" parent="EquipmentBackVisuals" unique_id=143675718]
 libraries/ = SubResource("AnimationLibrary_mndc6")
@@ -481,8 +479,6 @@ weapon_socket_front_position = Vector2(-13, -3)
 [node name="WeaponSocket" type="Node2D" parent="EquipmentVisuals" unique_id=578468954]
 
 [node name="WeaponVisual" type="Sprite2D" parent="EquipmentVisuals/WeaponSocket" unique_id=1218636856]
-position = Vector2(2, -8)
-rotation = 0.34906584
 
 [node name="ArmorVisual" type="Sprite2D" parent="EquipmentVisuals" unique_id=769056850]
 visible = false
