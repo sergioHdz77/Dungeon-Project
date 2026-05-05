@@ -4,10 +4,19 @@ extends Node2D
 # No aplica daño, defensa ni lógica de inventario.
 #
 # Estructura esperada:
-# EquipmentVisuals
-# ├── WeaponSocket
-# │   └── WeaponVisual
-# └── ArmorVisual
+#
+# Player
+# ├── EquipmentBackVisuals
+# │   ├── WeaponBackSocket
+# │   │   └── WeaponBackVisual
+# │   └── WeaponBackAnimationPlayer
+# ├── Visuals
+# │   └── AnimatedSprite2D
+# └── EquipmentVisuals
+#     ├── WeaponSocket
+#     │   └── WeaponVisual
+#     ├── ArmorVisual
+#     └── WeaponAnimationPlayer
 
 @onready var weapon_socket: Node2D = get_node_or_null("WeaponSocket")
 @onready var weapon_visual: Sprite2D = get_node_or_null("WeaponSocket/WeaponVisual")
