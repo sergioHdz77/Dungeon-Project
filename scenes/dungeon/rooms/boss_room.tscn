@@ -5,20 +5,24 @@
 [ext_resource type="PackedScene" uid="uid://cimcthdof1nfi" path="res://scenes/drops/loot_item.tscn" id="3_jyohm"]
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="3_trutp"]
 [ext_resource type="Script" uid="uid://51f8fy1da0xx" path="res://scripts/dungeon/rooms/enemy_spawner.gd" id="4_umr0q"]
+[ext_resource type="Script" uid="uid://cxegowmnctdpk" path="res://scripts/dungeon/rooms/room_loot_drop.gd" id="5_uc64q"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_jyohm"]
 
 [node name="BossRoom" type="Node2D" unique_id=1574445617]
 script = ExtResource("1_0v6ad")
 enemy_scene = ExtResource("2_lp04o")
-drops_loot_on_clear = true
-loot_item_scene = ExtResource("3_jyohm")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1235231117]
 position = Vector2(0, 140)
 
 [node name="EnemySpawner" type="Node" parent="." unique_id=730690087]
 script = ExtResource("4_umr0q")
+
+[node name="RoomLootDrop" type="Node" parent="." unique_id=1815614381]
+script = ExtResource("5_uc64q")
+drops_loot_on_clear = true
+loot_item_scene = ExtResource("3_jyohm")
 
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=1048983806]
 position = Vector2(0, -100)

@@ -1,7 +1,5 @@
 extends Node2D
 
-const ItemDatabase = preload("res://scripts/data/item_database.gd")
-
 # Sala base de mazmorra.
 #
 # Responsabilidades:
@@ -33,6 +31,7 @@ signal item_collected(item_id: String, display_name: String)
 
 @onready var enemy_spawner: Node = get_node_or_null("EnemySpawner")
 
+@onready var room_loot_drop: Node = get_node_or_null("RoomLootDrop")
 
 # -------------------------------------------------------------------
 # CONFIGURACIÓN VISUAL
@@ -57,14 +56,6 @@ signal item_collected(item_id: String, display_name: String)
 #
 # Si está vacío, se usa enemy_scene.
 @export var enemy_scenes: Array[PackedScene] = []
-
-
-# -------------------------------------------------------------------
-# LOOT
-# -------------------------------------------------------------------
-
-@export var drops_loot_on_clear: bool = false
-@export var loot_item_scene: PackedScene
 
 
 # -------------------------------------------------------------------
@@ -93,7 +84,8 @@ func setup_room(
 
 	setup_exit_doors()
 	setup_enemy_spawner()
-
+	setup_room_loot_drop()
+	
 	# Si esta sala ya estaba limpia, no volvemos a generar enemigos ni loot.
 	# Esto es importante al volver hacia atrás o entrar en ramas laterales.
 	if already_cleared:
@@ -133,6 +125,18 @@ func setup_enemy_spawner() -> void:
 		if not enemy_spawner.is_connected("enemy_removed", callback):
 			enemy_spawner.connect("enemy_removed", callback)
 
+func setup_room_loot_drop() -> void:
+	if room_loot_drop == null:
+		return
+
+	if room_loot_drop.has_method("setup"):
+		room_loot_drop.setup(self)
+
+	if room_loot_drop.has_signal("item_collected"):
+		var callback := Callable(self, "_on_room_loot_item_collected")
+
+		if not room_loot_drop.is_connected("item_collected", callback):
+			room_loot_drop.connect("item_collected", callback)
 
 func room_has_any_enemy_scene() -> bool:
 	if enemy_spawner == null:
@@ -324,51 +328,22 @@ func mark_room_as_cleared() -> void:
 
 	room_is_cleared = true
 
-	spawn_clear_loot()
+	drop_clear_loot()
 	unlock_exit_doors()
 
 	room_cleared.emit()
 
-
-func spawn_clear_loot() -> void:
-	if not drops_loot_on_clear:
+func drop_clear_loot() -> void:
+	if room_loot_drop == null:
 		return
 
-	if loot_item_scene == null:
+	if not room_loot_drop.has_method("drop_clear_loot"):
 		return
 
-	var item_data: Dictionary = ItemDatabase.get_random_loot_item_for_difficulty(difficulty)
-
-	if item_data.is_empty():
-		push_warning("%s: ItemDatabase no devolvió loot válido." % name)
-		return
-
-	var item_id: String = str(item_data.get("id", ""))
-	var display_name: String = str(item_data.get("name", "Objeto desconocido"))
-
-	if item_id.is_empty():
-		push_warning("%s: loot generado sin id." % name)
-		return
-
-	var loot_item := loot_item_scene.instantiate() as Node2D
-
-	if loot_item == null:
-		return
-
-	add_child(loot_item)
-
-	loot_item.global_position = global_position
-
-	if loot_item.has_method("setup_item"):
-		loot_item.setup_item(item_id, display_name)
-
-	if loot_item.has_signal("collected"):
-		loot_item.collected.connect(_on_loot_item_collected)
-
-	print("Loot generado en ", name, " dificultad ", difficulty, ": ", display_name)
+	room_loot_drop.drop_clear_loot(difficulty)
 
 
-func _on_loot_item_collected(item_id: String, display_name: String) -> void:
+func _on_room_loot_item_collected(item_id: String, display_name: String) -> void:
 	item_collected.emit(item_id, display_name)
 
 

@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="3_k02p6"]
 [ext_resource type="PackedScene" uid="uid://rpd5uj63mqxa" path="res://scenes/enemies/enemy_tank.tscn" id="4_fr2cp"]
 [ext_resource type="Script" uid="uid://51f8fy1da0xx" path="res://scripts/dungeon/rooms/enemy_spawner.gd" id="5_icnnh"]
+[ext_resource type="Script" uid="uid://cxegowmnctdpk" path="res://scripts/dungeon/rooms/room_loot_drop.gd" id="6_fr2cp"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_k02p6"]
 
@@ -19,6 +20,9 @@ position = Vector2(0, 120)
 
 [node name="EnemySpawner" type="Node" parent="." unique_id=1819900519]
 script = ExtResource("5_icnnh")
+
+[node name="RoomLootDrop" type="Node" parent="." unique_id=1453484336]
+script = ExtResource("6_fr2cp")
 
 [node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=2076010589]
 

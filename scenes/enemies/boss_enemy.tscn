@@ -2,15 +2,18 @@
 
 [ext_resource type="Script" uid="uid://dgomvbjdehfja" path="res://scripts/enemies/enemy.gd" id="1_ciwj1"]
 [ext_resource type="Texture2D" uid="uid://cvcdbd7b5vb22" path="res://art/enemyFlyingAlt_2.png" id="2_1dk32"]
+[ext_resource type="Script" uid="uid://becgjnrv31sjg" path="res://scripts/enemies/enemy_attack.gd" id="3_wm0l1"]
+[ext_resource type="Script" uid="uid://c5qqvdoj58dyc" path="res://scripts/enemies/enemy_movement.gd" id="4_ofms4"]
+[ext_resource type="Script" uid="uid://y76pfrtjnwmi" path="res://scripts/enemies/enemy_loot_drop.gd" id="5_vvlk3"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_v6fml"]
+radius = 5.666667
 
 [node name="Enemy" type="CharacterBody2D" unique_id=1173866472]
 script = ExtResource("1_ciwj1")
 speed = 85.0
 max_health = 180.0
 contact_damage = 20.0
-coin_value = 8
 knockback_resistance = 1.0
 draw_radius = 28.0
 enemy_color = Color(0.48924768, 0.50045216, 0.48956263, 1)
@@ -23,6 +26,15 @@ texture = ExtResource("2_1dk32")
 scale = Vector2(6, 6)
 shape = SubResource("CircleShape2D_v6fml")
 
-[node name="Visuals" type="Node2D" parent="." unique_id=896889564 groups=["enemies"]]
+[node name="Visuals" type="Node2D" parent="." unique_id=896889564]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals" unique_id=708134542]
+
+[node name="Attack" type="Node" parent="." unique_id=1293828758]
+script = ExtResource("3_wm0l1")
+
+[node name="Movement" type="Node" parent="." unique_id=2076737236]
+script = ExtResource("4_ofms4")
+
+[node name="LootDrop" type="Node" parent="." unique_id=1861900255]
+script = ExtResource("5_vvlk3")
