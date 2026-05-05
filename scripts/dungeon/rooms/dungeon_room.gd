@@ -7,16 +7,16 @@ const ItemDatabase = preload("res://scripts/data/item_database.gd")
 # Responsabilidades:
 # - dibujar una sala placeholder
 # - bloquear/desbloquear puertas de salida
-# - generar enemigos en puntos fijos
-# - elegir enemigos según dificultad
+# - coordinar EnemySpawner
 # - detectar cuándo la sala queda limpia
 # - soltar loot opcional al limpiarse
+#
+# Responsabilidades delegadas:
+# - generación de enemigos -> EnemySpawner.gd
 #
 # Fase actual:
 # - mantiene exit_requested antiguo sin dirección
 # - añade directional_exit_requested(direction) para mapa procedural real
-
-@onready var enemy_spawner: Node = get_node_or_null("EnemySpawner")
 
 signal room_cleared
 
@@ -29,6 +29,9 @@ signal exit_requested
 signal directional_exit_requested(direction: String)
 
 signal item_collected(item_id: String, display_name: String)
+
+
+@onready var enemy_spawner: Node = get_node_or_null("EnemySpawner")
 
 
 # -------------------------------------------------------------------
@@ -74,57 +77,15 @@ var alive_enemies: int = 0
 var room_is_cleared: bool = false
 
 
-func setup_enemy_spawner() -> void:
-	if enemy_spawner == null:
-		return
-
-	if enemy_spawner.has_method("setup"):
-		enemy_spawner.setup(
-			self,
-			player,
-			difficulty,
-			enemy_scene,
-			enemy_scenes
-		)
-
-	if enemy_spawner.has_signal("enemy_removed"):
-		var callback := Callable(self, "_on_enemy_spawner_enemy_removed")
-
-		if not enemy_spawner.is_connected("enemy_removed", callback):
-			enemy_spawner.connect("enemy_removed", callback)
-
-
-func room_has_any_enemy_scene() -> bool:
-	if enemy_spawner != null and enemy_spawner.has_method("has_any_enemy_scene"):
-		return enemy_spawner.has_any_enemy_scene()
-
-	return has_any_enemy_scene()
-
-
-func spawn_room_enemies() -> int:
-	if enemy_spawner == null:
-		return 0
-
-	if not enemy_spawner.has_method("spawn_enemies"):
-		return 0
-
-	return enemy_spawner.spawn_enemies()
-
-
-func _on_enemy_spawner_enemy_removed(remaining_enemies: int) -> void:
-	alive_enemies = remaining_enemies
-
-	print("Enemigo eliminado. Quedan: ", alive_enemies)
-
-	if alive_enemies <= 0:
-		print("Sala limpiada: ", name)
-		mark_room_as_cleared()
-
 # -------------------------------------------------------------------
 # SETUP DE SALA
 # -------------------------------------------------------------------
 
-func setup_room(new_player: Node2D, new_difficulty: int, already_cleared: bool = false) -> void:
+func setup_room(
+	new_player: Node2D,
+	new_difficulty: int,
+	already_cleared: bool = false
+) -> void:
 	player = new_player
 	difficulty = new_difficulty
 	room_is_cleared = false
@@ -152,123 +113,49 @@ func setup_room(new_player: Node2D, new_difficulty: int, already_cleared: bool =
 	else:
 		lock_exit_doors()
 
-func has_any_enemy_scene() -> bool:
-	if enemy_scene != null:
-		return true
 
-	for scene in enemy_scenes:
-		if scene != null:
-			return true
-
-	return false
-
-
-# -------------------------------------------------------------------
-# ENEMIGOS
-# -------------------------------------------------------------------
-
-func spawn_enemies() -> void:
-	var spawn_container := get_node_or_null("EnemySpawnPoints")
-
-	if spawn_container == null:
-		push_warning("%s: no tiene EnemySpawnPoints." % name)
+func setup_enemy_spawner() -> void:
+	if enemy_spawner == null:
 		return
 
-	for spawn_point in spawn_container.get_children():
-		var marker := spawn_point as Marker2D
+	if enemy_spawner.has_method("setup"):
+		enemy_spawner.setup(
+			self,
+			player,
+			difficulty,
+			enemy_scene,
+			enemy_scenes
+		)
 
-		if marker == null:
-			continue
+	if enemy_spawner.has_signal("enemy_removed"):
+		var callback := Callable(self, "_on_enemy_spawner_enemy_removed")
 
-		spawn_enemy_at(marker.global_position)
-
-
-func spawn_enemy_at(spawn_position: Vector2) -> void:
-	var selected_enemy_scene: PackedScene = pick_enemy_scene()
-
-	if selected_enemy_scene == null:
-		push_warning("%s: no hay enemy_scene válida." % name)
-		return
-
-	var enemy := selected_enemy_scene.instantiate() as Node2D
-
-	if enemy == null:
-		push_warning("%s: la escena de enemigo no instancia un Node2D." % name)
-		return
-
-	var enemies_container := get_node_or_null("Enemies") as Node2D
-
-	if enemies_container == null:
-		enemies_container = self
-
-	enemies_container.add_child(enemy)
-	enemy.global_position = spawn_position
-
-	if not enemy.is_in_group("enemies"):
-		enemy.add_to_group("enemies")
-
-	setup_enemy(enemy)
-
-	alive_enemies += 1
-
-	enemy.tree_exited.connect(_on_enemy_removed)
+		if not enemy_spawner.is_connected("enemy_removed", callback):
+			enemy_spawner.connect("enemy_removed", callback)
 
 
-func pick_enemy_scene() -> PackedScene:
-	if enemy_scenes.is_empty():
-		return enemy_scene
+func room_has_any_enemy_scene() -> bool:
+	if enemy_spawner == null:
+		return false
 
-	var available_scenes: Array[PackedScene] = get_enemy_pool_for_difficulty()
+	if not enemy_spawner.has_method("has_any_enemy_scene"):
+		return false
 
-	if available_scenes.is_empty():
-		return enemy_scene
-
-	var random_index: int = randi_range(0, available_scenes.size() - 1)
-	return available_scenes[random_index]
+	return enemy_spawner.has_any_enemy_scene()
 
 
-func get_enemy_pool_for_difficulty() -> Array[PackedScene]:
-	var pool: Array[PackedScene] = []
+func spawn_room_enemies() -> int:
+	if enemy_spawner == null:
+		return 0
 
-	if enemy_scenes.is_empty():
-		return pool
+	if not enemy_spawner.has_method("spawn_enemies"):
+		return 0
 
-	var max_index_exclusive: int = 1
-
-	if difficulty == 2:
-		max_index_exclusive = min(2, enemy_scenes.size())
-	elif difficulty >= 3:
-		max_index_exclusive = enemy_scenes.size()
-
-	for i in range(max_index_exclusive):
-		var scene: PackedScene = enemy_scenes[i]
-
-		if scene != null:
-			pool.append(scene)
-
-	return pool
+	return enemy_spawner.spawn_enemies()
 
 
-func setup_enemy(enemy: Node2D) -> void:
-	if not enemy.has_method("setup"):
-		return
-
-	var health_multiplier: float = 1.0 + float(difficulty - 1) * 0.25
-	var speed_multiplier: float = 1.0 + float(difficulty - 1) * 0.10
-	var damage_multiplier: float = 1.0 + float(difficulty - 1) * 0.15
-	var reward_multiplier: float = 1.0 + float(difficulty - 1) * 0.20
-
-	enemy.setup(
-		player,
-		health_multiplier,
-		speed_multiplier,
-		damage_multiplier,
-		reward_multiplier
-	)
-
-
-func _on_enemy_removed() -> void:
-	alive_enemies -= 1
+func _on_enemy_spawner_enemy_removed(remaining_enemies: int) -> void:
+	alive_enemies = remaining_enemies
 
 	print("Enemigo eliminado. Quedan: ", alive_enemies)
 
@@ -281,9 +168,12 @@ func _on_enemy_removed() -> void:
 # PUERTAS DE SALIDA
 # -------------------------------------------------------------------
 
-func configure_exit_doors_for_connections(connections: Dictionary, room_type: String = "") -> void:
+func configure_exit_doors_for_connections(
+	connections: Dictionary,
+	room_type: String = ""
+) -> void:
 	# Activa solo las puertas que tienen conexión en el mapa procedural.
-	#a
+	#
 	# Excepción:
 	# - En BossRoom, permitimos siempre la salida east.
 	# - Esa puerta no conecta con otra sala.
@@ -291,7 +181,7 @@ func configure_exit_doors_for_connections(connections: Dictionary, room_type: St
 
 	var exit_doors: Array[Node] = get_exit_doors()
 
-	for exit_door in exit_doors:
+	for exit_door: Node in exit_doors:
 		if exit_door == null:
 			continue
 
@@ -307,10 +197,11 @@ func configure_exit_doors_for_connections(connections: Dictionary, room_type: St
 		else:
 			exit_door.visible = should_enable
 
+
 func setup_exit_doors() -> void:
 	var exit_doors: Array[Node] = get_exit_doors()
 
-	for exit_door in exit_doors:
+	for exit_door: Node in exit_doors:
 		setup_single_exit_door(exit_door)
 
 
@@ -354,16 +245,15 @@ func get_exit_doors() -> Array[Node]:
 	var doors_container := get_node_or_null("Doors")
 
 	if doors_container != null:
-		for child in doors_container.get_children():
-			var child_node := child as Node
-
-			if child_node == null:
+		for child: Node in doors_container.get_children():
+			if child == null:
 				continue
 
-			if not exit_doors.has(child_node):
-				exit_doors.append(child_node)
+			if not exit_doors.has(child):
+				exit_doors.append(child)
 
 	return exit_doors
+
 
 func get_exit_door_direction(exit_door: Node) -> String:
 	# Lee la dirección exportada del RoomExit.
@@ -377,10 +267,11 @@ func get_exit_door_direction(exit_door: Node) -> String:
 
 	return "east"
 
+
 func lock_exit_doors() -> void:
 	var exit_doors: Array[Node] = get_exit_doors()
 
-	for exit_door in exit_doors:
+	for exit_door: Node in exit_doors:
 		if exit_door.has_method("lock"):
 			exit_door.lock()
 
@@ -388,9 +279,17 @@ func lock_exit_doors() -> void:
 func unlock_exit_doors() -> void:
 	var exit_doors: Array[Node] = get_exit_doors()
 
-	for exit_door in exit_doors:
+	for exit_door: Node in exit_doors:
 		if exit_door.has_method("unlock"):
 			exit_door.unlock()
+
+
+func set_exit_doors_temporarily_disabled(duration: float) -> void:
+	var exit_doors: Array[Node] = get_exit_doors()
+
+	for exit_door: Node in exit_doors:
+		if exit_door.has_method("set_temporary_disabled"):
+			exit_door.set_temporary_disabled(duration)
 
 
 func _on_directional_exit_door_requested(direction: String) -> void:
@@ -413,13 +312,6 @@ func _on_exit_door_requested() -> void:
 	print("Salida antigua solicitada sin dirección.")
 
 	exit_requested.emit()
-
-func set_exit_doors_temporarily_disabled(duration: float) -> void:
-	var exit_doors: Array[Node] = get_exit_doors()
-
-	for exit_door in exit_doors:
-		if exit_door.has_method("set_temporary_disabled"):
-			exit_door.set_temporary_disabled(duration)
 
 
 # -------------------------------------------------------------------
