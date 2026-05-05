@@ -43,11 +43,27 @@ extends Node2D
 @export var weapon_socket_side_z_index: int = 2
 @export var weapon_socket_front_z_index: int = 2
 
+@onready var weapon_tip: Marker2D = get_node_or_null("WeaponSocket/WeaponVisual/WeaponTip")
+@onready var weapon_trail: Line2D = get_node_or_null("WeaponTrail")
+
+@onready var weapon_back_tip: Marker2D = get_node_or_null("../EquipmentBackVisuals/WeaponBackSocket/WeaponBackVisual/WeaponBackTip")
+@onready var weapon_back_trail: Line2D = get_node_or_null("../EquipmentBackVisuals/WeaponBackTrail")
+
 var current_weapon_entry: EquipmentVisualEntry = null
 var current_armor_entry: EquipmentVisualEntry = null
 
 func _ready() -> void:
 	sync_back_visuals_transform()
+	
+	setup_weapon_trails()
+
+	if weapon_animation_player != null:
+		if not weapon_animation_player.animation_finished.is_connected(_on_front_weapon_animation_finished):
+			weapon_animation_player.animation_finished.connect(_on_front_weapon_animation_finished)
+
+	if weapon_back_animation_player != null:
+		if not weapon_back_animation_player.animation_finished.is_connected(_on_back_weapon_animation_finished):
+			weapon_back_animation_player.animation_finished.connect(_on_back_weapon_animation_finished)
 
 func show_weapon(weapon_id: String, weapon_data: Dictionary) -> void:
 	
@@ -227,6 +243,9 @@ func play_front_weapon_attack(animation_name: String) -> void:
 	if not weapon_animation_player.has_animation(animation_name):
 		print("EquipmentVisuals: no existe animación delantera de arma: ", animation_name)
 		return
+		
+	if weapon_trail != null and weapon_trail.has_method("start_trail"):
+		weapon_trail.start_trail()
 
 	weapon_animation_player.stop()
 	weapon_animation_player.play(animation_name)
@@ -246,6 +265,9 @@ func play_back_weapon_attack(animation_name: String) -> void:
 	if not weapon_back_animation_player.has_animation(animation_name):
 		print("EquipmentVisuals: no existe animación trasera de arma: ", animation_name)
 		return
+
+	if weapon_back_trail != null and weapon_back_trail.has_method("start_trail"):
+		weapon_back_trail.start_trail()
 
 	weapon_back_animation_player.stop()
 	weapon_back_animation_player.play(animation_name)
@@ -367,3 +389,24 @@ func sync_back_visuals_transform() -> void:
 	equipment_back_visuals.position = position
 	equipment_back_visuals.scale = scale
 	equipment_back_visuals.rotation = rotation
+	
+func setup_weapon_trails() -> void:
+	if weapon_trail != null and weapon_tip != null:
+		if weapon_trail.has_method("setup"):
+			weapon_trail.setup(weapon_tip)
+
+	if weapon_back_trail != null and weapon_back_tip != null:
+		if weapon_back_trail.has_method("setup"):
+			weapon_back_trail.setup(weapon_back_tip)
+
+
+func _on_front_weapon_animation_finished(animation_name: StringName) -> void:
+	if str(animation_name).begins_with("weapon_attack"):
+		if weapon_trail != null and weapon_trail.has_method("stop_trail"):
+			weapon_trail.stop_trail()
+
+
+func _on_back_weapon_animation_finished(animation_name: StringName) -> void:
+	if str(animation_name).begins_with("weapon_attack"):
+		if weapon_back_trail != null and weapon_back_trail.has_method("stop_trail"):
+			weapon_back_trail.stop_trail()
