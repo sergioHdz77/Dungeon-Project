@@ -4,6 +4,8 @@ extends CharacterBody2D
 
 @onready var attack: Node = get_node_or_null("Attack")
 @onready var movement: Node = get_node_or_null("Movement")
+@onready var loot_drop: Node = get_node_or_null("LootDrop")
+
 # -------------------------------------------------------------------
 # STATS BASE
 # -------------------------------------------------------------------
@@ -11,8 +13,6 @@ extends CharacterBody2D
 @export var speed: float = 120.0
 @export var max_health: float = 60.0
 @export var contact_damage: float = 12.0
-
-@export var coin_value: int = 1
 
 # -------------------------------------------------------------------
 # KNOCKBACK
@@ -101,17 +101,16 @@ func setup(
 	max_health *= health_multiplier
 	speed *= speed_multiplier
 	contact_damage *= damage_multiplier
-	coin_value = max(1, int(round(float(coin_value) * reward_multiplier)))
 
 	health = max_health
 
 	if attack != null and attack.has_method("setup"):
 		attack.setup(self, target, contact_damage)
 		
-	setup_components()
+	setup_components(reward_multiplier)
 	queue_redraw()
 	
-func setup_components() -> void:
+func setup_components(reward_multiplier: float = 1.0) -> void:
 	if movement != null and movement.has_method("setup"):
 		movement.setup(
 			self,
@@ -124,6 +123,9 @@ func setup_components() -> void:
 
 	if attack != null and attack.has_method("setup"):
 		attack.setup(self, target, contact_damage)
+
+	if loot_drop != null and loot_drop.has_method("setup"):
+		loot_drop.setup(self, reward_multiplier)
 
 func cache_visual_nodes() -> void:
 	visuals = get_node_or_null("Visuals") as Node2D
@@ -236,7 +238,8 @@ func die() -> void:
 	if target != null and target.has_method("register_kill"):
 		target.register_kill()
 
-	drop_coin()
+	if loot_drop != null and loot_drop.has_method("drop_rewards"):
+		loot_drop.drop_rewards()
 
 	# De momento borramos inmediatamente.
 	# Más adelante, si hay animación de muerte, esperaremos a que termine.
@@ -253,16 +256,6 @@ func update_hit_flash(delta: float) -> void:
 
 		if animated_sprite != null:
 			animated_sprite.modulate = Color.WHITE
-
-
-func drop_coin() -> void:
-	if coin_drop_scene == null:
-		return
-
-	var coin_drop = coin_drop_scene.instantiate()
-	get_tree().current_scene.add_child(coin_drop)
-	coin_drop.setup(global_position + Vector2(8, 0), coin_value)
-
 
 # -------------------------------------------------------------------
 # VISUAL / ANIMACIÓN
