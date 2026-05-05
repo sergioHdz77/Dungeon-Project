@@ -55,6 +55,10 @@ func play_attack(attack_direction: Vector2) -> void:
 	else:
 		play_animation_with_fallback("attack_side", "attack_side", 0.35)
 
+	if equipment_visuals != null:
+		if equipment_visuals.has_method("play_weapon_attack"):
+			equipment_visuals.play_weapon_attack(attack_direction)
+
 func play_hurt() -> void:
 	play_animation("hurt", hurt_animation_duration)
 

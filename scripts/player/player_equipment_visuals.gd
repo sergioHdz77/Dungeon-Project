@@ -6,6 +6,8 @@ extends Node2D
 @onready var weapon_visual: Sprite2D = get_node_or_null("WeaponVisual")
 @onready var armor_visual: Sprite2D = get_node_or_null("ArmorVisual")
 
+@onready var weapon_animation_player: AnimationPlayer = get_node_or_null("WeaponAnimationPlayer")
+
 # Listas configurables desde el inspector.
 # Cada entrada relaciona:
 # item_id -> textura
@@ -84,3 +86,37 @@ func get_texture_for_id(
 			return entry.texture
 
 	return null
+	
+func play_weapon_attack(direction: Vector2) -> void:
+	if weapon_visual == null:
+		return
+
+	if not weapon_visual.visible:
+		return
+
+	if weapon_animation_player == null:
+		return
+
+	var animation_name: String = get_weapon_attack_animation_name(direction)
+
+	if not weapon_animation_player.has_animation(animation_name):
+		print("EquipmentVisuals: no existe animación de arma: ", animation_name)
+		return
+
+	weapon_animation_player.stop()
+	weapon_animation_player.play(animation_name)
+
+
+func get_weapon_attack_animation_name(direction: Vector2) -> String:
+	if direction.length() <= 0.01:
+		return "weapon_attack_side"
+
+	var normalized_direction: Vector2 = direction.normalized()
+
+	if absf(normalized_direction.x) >= absf(normalized_direction.y):
+		return "weapon_attack_side"
+
+	if normalized_direction.y < 0.0:
+		return "weapon_attack_back"
+
+	return "weapon_attack_front"
