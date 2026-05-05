@@ -2,66 +2,128 @@ extends Node2D
 
 # Este componente solo se encarga de mostrar visualmente el equipo.
 # No aplica daño, defensa ni lógica de inventario.
+#
+# Estructura esperada:
+# EquipmentVisuals
+# ├── WeaponSocket
+# │   └── WeaponVisual
+# └── ArmorVisual
 
-@onready var weapon_visual: Sprite2D = get_node_or_null("WeaponVisual")
+@onready var weapon_socket: Node2D = get_node_or_null("WeaponSocket")
+@onready var weapon_visual: Sprite2D = get_node_or_null("WeaponSocket/WeaponVisual")
 @onready var armor_visual: Sprite2D = get_node_or_null("ArmorVisual")
 
+# Si ya tienes un WeaponAnimationPlayer, lo dejamos preparado.
 @onready var weapon_animation_player: AnimationPlayer = get_node_or_null("WeaponAnimationPlayer")
 
-# Listas configurables desde el inspector.
-# Cada entrada relaciona:
-# item_id -> textura
 @export var weapon_visual_entries: Array[EquipmentVisualEntry] = []
 @export var armor_visual_entries: Array[EquipmentVisualEntry] = []
 
+var current_weapon_entry: EquipmentVisualEntry = null
+var current_armor_entry: EquipmentVisualEntry = null
+
 
 func show_weapon(weapon_id: String, weapon_data: Dictionary) -> void:
-	if weapon_visual == null:
+	if weapon_socket == null:
+		push_warning("EquipmentVisuals: falta WeaponSocket.")
 		return
 
-	var texture: Texture2D = get_texture_for_id(weapon_id, weapon_visual_entries)
+	if weapon_visual == null:
+		push_warning("EquipmentVisuals: falta WeaponSocket/WeaponVisual.")
+		return
 
-	if texture == null:
+	var entry: EquipmentVisualEntry = get_visual_entry_for_id(
+		weapon_id,
+		weapon_visual_entries
+	)
+
+	if entry == null:
 		weapon_visual.visible = false
 		weapon_visual.texture = null
+		current_weapon_entry = null
+		print("EquipmentVisuals: no hay entrada visual para arma: ", weapon_id)
+		return
+
+	if entry.texture == null:
+		weapon_visual.visible = false
+		weapon_visual.texture = null
+		current_weapon_entry = null
 		print("EquipmentVisuals: no hay textura para arma: ", weapon_id)
 		return
 
-	weapon_visual.texture = texture
+	current_weapon_entry = entry
+
+	weapon_visual.texture = entry.texture
+
+	# Importante:
+	# centered = false hace que el origen del sprite sea la esquina superior izquierda.
+	# Luego offset = -grip_offset mueve la textura para que la empuñadura quede en el origen del WeaponSocket.
+	weapon_visual.centered = false
+	weapon_visual.offset = -entry.grip_offset
+	weapon_visual.scale = entry.visual_scale
+	weapon_visual.position = Vector2.ZERO
+	weapon_visual.rotation_degrees = 0.0
 	weapon_visual.visible = true
 
-	print("EquipmentVisuals: mostrando arma: ", weapon_id)
+	weapon_socket.rotation_degrees = entry.idle_rotation_degrees
+
+	print("EquipmentVisuals: mostrando arma anclada a socket: ", weapon_id)
 
 
 func show_armor(armor_id: String, armor_data: Dictionary) -> void:
 	if armor_visual == null:
 		return
 
-	var texture: Texture2D = get_texture_for_id(armor_id, armor_visual_entries)
+	var entry: EquipmentVisualEntry = get_visual_entry_for_id(
+		armor_id,
+		armor_visual_entries
+	)
 
-	if texture == null:
+	if entry == null:
 		armor_visual.visible = false
 		armor_visual.texture = null
+		current_armor_entry = null
+		print("EquipmentVisuals: no hay entrada visual para armadura: ", armor_id)
+		return
+
+	if entry.texture == null:
+		armor_visual.visible = false
+		armor_visual.texture = null
+		current_armor_entry = null
 		print("EquipmentVisuals: no hay textura para armadura: ", armor_id)
 		return
 
-	armor_visual.texture = texture
+	current_armor_entry = entry
+
+	armor_visual.texture = entry.texture
 	armor_visual.visible = true
 
 	print("EquipmentVisuals: mostrando armadura: ", armor_id)
 
 
 func clear_weapon() -> void:
+	current_weapon_entry = null
+
 	if weapon_visual == null:
 		return
 
 	weapon_visual.texture = null
 	weapon_visual.visible = false
+	weapon_visual.offset = Vector2.ZERO
+	weapon_visual.position = Vector2.ZERO
+	weapon_visual.rotation_degrees = 0.0
+
+	if weapon_socket != null:
+		weapon_socket.position = Vector2.ZERO
+		weapon_socket.rotation_degrees = 0.0
+		weapon_socket.scale = Vector2.ONE
 
 	print("EquipmentVisuals: arma visual quitada")
 
 
 func clear_armor() -> void:
+	current_armor_entry = null
+
 	if armor_visual == null:
 		return
 
@@ -71,10 +133,10 @@ func clear_armor() -> void:
 	print("EquipmentVisuals: armadura visual quitada")
 
 
-func get_texture_for_id(
+func get_visual_entry_for_id(
 	item_id: String,
 	visual_entries: Array[EquipmentVisualEntry]
-) -> Texture2D:
+) -> EquipmentVisualEntry:
 	if item_id.is_empty():
 		return null
 
@@ -83,16 +145,23 @@ func get_texture_for_id(
 			continue
 
 		if entry.item_id == item_id:
-			return entry.texture
+			return entry
 
 	return null
-	
+
+
 func play_weapon_attack(direction: Vector2) -> void:
 	if weapon_visual == null:
 		return
 
 	if not weapon_visual.visible:
 		return
+
+	if weapon_socket == null:
+		return
+
+	# Antes de animar, colocamos el socket en una posición base según dirección.
+	apply_weapon_socket_idle_pose(direction)
 
 	if weapon_animation_player == null:
 		return
@@ -105,6 +174,45 @@ func play_weapon_attack(direction: Vector2) -> void:
 
 	weapon_animation_player.stop()
 	weapon_animation_player.play(animation_name)
+
+
+func apply_weapon_socket_idle_pose(direction: Vector2) -> void:
+	if weapon_socket == null:
+		return
+
+	var normalized_direction: Vector2 = Vector2.RIGHT
+
+	if direction.length() > 0.01:
+		normalized_direction = direction.normalized()
+
+	# Valores temporales para prototipo.
+	# Luego los afinamos según el sprite real.
+	if absf(normalized_direction.x) >= absf(normalized_direction.y):
+		# Lateral.
+		weapon_socket.position = Vector2(7, 1)
+		weapon_socket.z_index = 2
+
+		if normalized_direction.x < 0.0:
+			weapon_socket.scale.x = -1.0
+		else:
+			weapon_socket.scale.x = 1.0
+
+		weapon_socket.scale.y = 1.0
+
+	elif normalized_direction.y < 0.0:
+		# Mirando arriba / espalda.
+		weapon_socket.position = Vector2(-3, -5)
+		weapon_socket.scale = Vector2.ONE
+		weapon_socket.z_index = -1
+
+	else:
+		# Mirando abajo / frente.
+		weapon_socket.position = Vector2(4, 6)
+		weapon_socket.scale = Vector2.ONE
+		weapon_socket.z_index = 2
+
+	if current_weapon_entry != null:
+		weapon_socket.rotation_degrees = current_weapon_entry.idle_rotation_degrees
 
 
 func get_weapon_attack_animation_name(direction: Vector2) -> String:
