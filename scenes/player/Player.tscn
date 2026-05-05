@@ -296,53 +296,54 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("WeaponSocket/WeaponVisual:position")
+tracks/0/path = NodePath("WeaponSocket:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector2(8, 2)]
+"values": [Vector2(0, 0)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("WeaponSocket/WeaponVisual:rotation")
+tracks/1/path = NodePath("WeaponSocket:rotation")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [-0.43633232]
+"values": [0.0]
 }
 
 [sub_resource type="Animation" id="Animation_ro0t8"]
 resource_name = "weapon_attack_back"
+length = 0.16
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("WeaponSocket/WeaponVisual:position")
+tracks/0/path = NodePath("WeaponSocket:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.08, 0.16),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector2(2, -8), Vector2(0, -16), Vector2(2, -8)]
+"values": [Vector2(-3, -5), Vector2(-3, -12), Vector2(-3, -5)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("WeaponSocket/WeaponVisual:rotation")
+tracks/1/path = NodePath("WeaponSocket:rotation")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.08, 0.16),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [0.34906584, -0.34906584, 0.34906584]
+"values": [0.43633232, -0.43633232, 0.43633232]
 }
 
 [sub_resource type="Animation" id="Animation_8nn5r"]
@@ -351,26 +352,26 @@ length = 0.16
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("WeaponSocket/WeaponVisual:position")
+tracks/0/path = NodePath("WeaponSocket:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.08, 0.16),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector2(2, 8), Vector2(0, 16), Vector2(2, 8)]
+"values": [Vector2(4, 6), Vector2(4, 13), Vector2(4, 6)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("WeaponSocket/WeaponVisual:rotation")
+tracks/1/path = NodePath("WeaponSocket:rotation")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.08, 0.16),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-0.34906584, 0.34906584, -0.34906584]
+"values": [-0.43633232, 0.43633232, -0.43633232]
 }
 
 [sub_resource type="Animation" id="Animation_kvwax"]
@@ -379,26 +380,26 @@ length = 0.16
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("WeaponSocket/WeaponVisual:position")
+tracks/0/path = NodePath("WeaponSocket:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.08, 0.16),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector2(8, 2), Vector2(16, 0), Vector2(8, 2)]
+"values": [Vector2(0, 0), Vector2(13, 0), Vector2(7, 1)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("WeaponSocket/WeaponVisual:rotation")
+tracks/1/path = NodePath("WeaponSocket:rotation")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.08, 0.16),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-0.43633232, 0.61086524, -0.43633232]
+"values": [0.0, 0.7853982, -0.61086524]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_x3qp0"]
@@ -464,8 +465,8 @@ weapon_visual_entries = Array[ExtResource("18_pi3ps")]([SubResource("Resource_v5
 [node name="WeaponSocket" type="Node2D" parent="EquipmentVisuals" unique_id=578468954]
 
 [node name="WeaponVisual" type="Sprite2D" parent="EquipmentVisuals/WeaponSocket" unique_id=1218636856]
-position = Vector2(8, 2)
-rotation = -0.43633232
+position = Vector2(2, -8)
+rotation = 0.34906584
 
 [node name="ArmorVisual" type="Sprite2D" parent="EquipmentVisuals" unique_id=769056850]
 visible = false
