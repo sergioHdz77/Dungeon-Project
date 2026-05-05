@@ -447,13 +447,15 @@ script = ExtResource("1_c3xxp")
 
 [node name="EquipmentBackVisuals" type="Node2D" parent="." unique_id=99627934]
 texture_filter = 1
+position = Vector2(-11, 0)
+scale = Vector2(3, 3)
 
 [node name="WeaponBackSocket" type="Node2D" parent="EquipmentBackVisuals" unique_id=1602372363]
 position = Vector2(-3, -5)
 rotation = 0.43633232
 
 [node name="WeaponBackVisual" type="Sprite2D" parent="EquipmentBackVisuals/WeaponBackSocket" unique_id=1088030083]
-position = Vector2(-19, -5)
+position = Vector2(-20.455, -5)
 scale = Vector2(3, 3)
 
 [node name="WeaponBackAnimationPlayer" type="AnimationPlayer" parent="EquipmentBackVisuals" unique_id=143675718]

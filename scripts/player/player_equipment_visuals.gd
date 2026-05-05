@@ -20,6 +20,8 @@ extends Node2D
 # Si ya tienes un WeaponAnimationPlayer, lo dejamos preparado.
 @onready var weapon_animation_player: AnimationPlayer = get_node_or_null("WeaponAnimationPlayer")
 
+@onready var equipment_back_visuals: Node2D = get_node_or_null("../EquipmentBackVisuals")
+
 @export var weapon_visual_entries: Array[EquipmentVisualEntry] = []
 @export var armor_visual_entries: Array[EquipmentVisualEntry] = []
 
@@ -35,8 +37,13 @@ extends Node2D
 var current_weapon_entry: EquipmentVisualEntry = null
 var current_armor_entry: EquipmentVisualEntry = null
 
+func _ready() -> void:
+	sync_back_visuals_transform()
 
 func show_weapon(weapon_id: String, weapon_data: Dictionary) -> void:
+	
+	sync_back_visuals_transform()
+
 	if weapon_socket == null:
 		push_warning("EquipmentVisuals: falta WeaponSocket.")
 		return
@@ -342,3 +349,12 @@ func get_weapon_attack_animation_name(direction: Vector2) -> String:
 		return "weapon_attack_back"
 
 	return "weapon_attack_front"
+
+func sync_back_visuals_transform() -> void:
+	if equipment_back_visuals == null:
+		return
+
+	# La capa trasera debe vivir en el mismo espacio visual que EquipmentVisuals.
+	equipment_back_visuals.position = position
+	equipment_back_visuals.scale = scale
+	equipment_back_visuals.rotation = rotation
