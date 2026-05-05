@@ -410,3 +410,14 @@ func _on_back_weapon_animation_finished(animation_name: StringName) -> void:
 	if str(animation_name).begins_with("weapon_attack"):
 		if weapon_back_trail != null and weapon_back_trail.has_method("stop_trail"):
 			weapon_back_trail.stop_trail()
+			
+func trigger_attack_hit_frame() -> void:
+	var player_node: Node = get_parent()
+
+	if player_node == null:
+		return
+
+	if not player_node.has_method("trigger_attack_hit_frame"):
+		return
+
+	player_node.trigger_attack_hit_frame()
