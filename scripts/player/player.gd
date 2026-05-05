@@ -92,6 +92,9 @@ func _setup_components() -> void:
 func _connect_component_signals() -> void:
 	if economy != null and economy.has_signal("economy_changed"):
 		economy.economy_changed.connect(_on_stats_source_changed)
+		
+	if combat != null and combat.has_signal("attack_started"):
+		combat.attack_started.connect(_on_combat_attack_started)
 
 	if progression != null:
 		if progression.has_signal("progression_changed"):
@@ -113,7 +116,13 @@ func _on_progression_player_died() -> void:
 
 	player_died.emit()
 
+func _on_combat_attack_started(attack_direction: Vector2) -> void:
+	if visual_controller == null:
+		return
 
+	if visual_controller.has_method("play_attack"):
+		visual_controller.play_attack(attack_direction)
+		
 # -------------------------------------------------------------------
 # API pública para drops / enemigos / sistemas externos
 # -------------------------------------------------------------------

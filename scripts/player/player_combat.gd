@@ -6,6 +6,8 @@ extends Node
 # - Attack
 # - Block
 
+signal attack_started(attack_direction: Vector2)
+
 var player: Node2D = null
 
 @onready var attack: Node = get_node_or_null("Attack")
@@ -80,8 +82,12 @@ func try_melee_attack() -> void:
 	if not attack.has_method("try_melee_attack"):
 		return
 
-	attack.try_melee_attack(facing_direction)
+	var attack_was_started: bool = attack.try_melee_attack(facing_direction)
+
 	_sync_public_state()
+
+	if attack_was_started:
+		attack_started.emit(facing_direction)
 
 
 func get_modified_incoming_damage(

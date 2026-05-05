@@ -45,6 +45,15 @@ func process_visuals(delta: float) -> void:
 	_update_visual_direction_from_velocity()
 	_update_movement_animation()
 
+func play_attack(attack_direction: Vector2) -> void:
+	_set_visual_direction_from_vector(attack_direction)
+
+	if visual_facing_direction == Vector2.UP:
+		play_animation_with_fallback("attack_back", "attack_side", 0.35)
+	elif visual_facing_direction == Vector2.DOWN:
+		play_animation_with_fallback("attack_front", "attack_side", 0.35)
+	else:
+		play_animation_with_fallback("attack_side", "attack_side", 0.35)
 
 func play_hurt() -> void:
 	play_animation("hurt", hurt_animation_duration)
@@ -203,3 +212,27 @@ func _on_armor_unequipped() -> void:
 	if equipment_visuals != null:
 		if equipment_visuals.has_method("clear_armor"):
 			equipment_visuals.clear_armor()
+			
+func _set_visual_direction_from_vector(direction: Vector2) -> void:
+	if animated_sprite == null:
+		return
+
+	if direction.length() <= 0.01:
+		return
+
+	var normalized_direction: Vector2 = direction.normalized()
+
+	if absf(normalized_direction.x) >= absf(normalized_direction.y):
+		if normalized_direction.x < 0.0:
+			visual_facing_direction = Vector2.LEFT
+			animated_sprite.flip_h = true
+		else:
+			visual_facing_direction = Vector2.RIGHT
+			animated_sprite.flip_h = false
+	else:
+		if normalized_direction.y < 0.0:
+			visual_facing_direction = Vector2.UP
+		else:
+			visual_facing_direction = Vector2.DOWN
+
+		animated_sprite.flip_h = false
