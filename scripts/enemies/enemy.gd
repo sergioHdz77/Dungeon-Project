@@ -1,10 +1,23 @@
 extends CharacterBody2D
 
-
+# Enemigo base.
+#
+# Responsabilidades de este script:
+# - Stats base.
+# - Setup por dificultad.
+# - Vida / daño / muerte.
+# - Coordinar componentes.
+# - Visual placeholder temporal.
+#
+# Responsabilidades delegadas:
+# - Movimiento y knockback -> EnemyMovement.gd
+# - Ataque -> EnemyAttack.gd
+# - Drops -> EnemyLootDrop.gd
 
 @onready var attack: Node = get_node_or_null("Attack")
 @onready var movement: Node = get_node_or_null("Movement")
 @onready var loot_drop: Node = get_node_or_null("LootDrop")
+
 
 # -------------------------------------------------------------------
 # STATS BASE
@@ -12,10 +25,15 @@ extends CharacterBody2D
 
 @export var speed: float = 120.0
 @export var max_health: float = 60.0
+
+# Se mantiene como stat base de daño del enemigo.
+# Ahora ya no se usa como daño por contacto continuo.
+# Se pasa a EnemyAttack como daño de ataque.
 @export var contact_damage: float = 12.0
 
+
 # -------------------------------------------------------------------
-# KNOCKBACK
+# KNOCKBACK CONFIG
 # -------------------------------------------------------------------
 
 # Cuánta resistencia tiene este enemigo al knockback.
@@ -31,7 +49,6 @@ extends CharacterBody2D
 # Esto evita que enemigos rápidos cancelen el empuje inmediatamente.
 @export var chase_control_during_knockback: float = 0.25
 
-var knockback_velocity: Vector2 = Vector2.ZERO
 
 # -------------------------------------------------------------------
 # VISUAL PLACEHOLDER
@@ -44,6 +61,7 @@ var knockback_velocity: Vector2 = Vector2.ZERO
 # Si más adelante hay AnimatedSprite2D, el círculo placeholder se puede desactivar.
 @export var use_placeholder_drawing: bool = true
 
+
 # -------------------------------------------------------------------
 # HIT FEEDBACK
 # -------------------------------------------------------------------
@@ -55,7 +73,7 @@ var hit_flash_timer: float = 0.0
 
 
 # -------------------------------------------------------------------
-# REFERENCIAS
+# REFERENCIAS / ESTADO
 # -------------------------------------------------------------------
 
 var target: Node2D = null
@@ -66,13 +84,6 @@ var animated_sprite: AnimatedSprite2D = null
 
 
 # -------------------------------------------------------------------
-# DROPS
-# -------------------------------------------------------------------
-
-var coin_drop_scene: PackedScene = preload("res://scenes/drops/coin_drop.tscn")
-
-
-# -------------------------------------------------------------------
 # SETUP
 # -------------------------------------------------------------------
 
@@ -80,8 +91,7 @@ func _ready() -> void:
 	add_to_group("enemies")
 
 	cache_visual_nodes()
-	setup_components()
-	
+
 	if health <= 0.0:
 		health = max_health
 
@@ -104,12 +114,10 @@ func setup(
 
 	health = max_health
 
-	if attack != null and attack.has_method("setup"):
-		attack.setup(self, target, contact_damage)
-		
 	setup_components(reward_multiplier)
 	queue_redraw()
-	
+
+
 func setup_components(reward_multiplier: float = 1.0) -> void:
 	if movement != null and movement.has_method("setup"):
 		movement.setup(
@@ -126,6 +134,7 @@ func setup_components(reward_multiplier: float = 1.0) -> void:
 
 	if loot_drop != null and loot_drop.has_method("setup"):
 		loot_drop.setup(self, reward_multiplier)
+
 
 func cache_visual_nodes() -> void:
 	visuals = get_node_or_null("Visuals") as Node2D
@@ -155,55 +164,42 @@ func _physics_process(delta: float) -> void:
 	if should_chase_target():
 		if movement != null and movement.has_method("move_towards_target"):
 			movement.move_towards_target()
-		else:
-			move_towards_target()
 	else:
 		if movement != null and movement.has_method("stop_and_slide"):
 			movement.stop_and_slide()
-		else:
-			velocity = Vector2.ZERO
-			move_and_slide()
 
 	update_visual_direction()
 	queue_redraw()
 
 
-func move_towards_target() -> void:
-	var dir: Vector2 = global_position.direction_to(target.global_position)
-	var chase_velocity: Vector2 = dir * speed
+func should_chase_target() -> bool:
+	if attack == null:
+		return true
 
-	# Si está siendo empujado, reducimos temporalmente su capacidad
-	# de perseguir al jugador. Esto hace que el knockback se note
-	# también en enemigos rápidos.
-	if knockback_velocity.length() > 5.0:
-		chase_velocity *= chase_control_during_knockback
+	if attack.has_method("is_busy"):
+		if attack.is_busy():
+			return false
 
-	velocity = chase_velocity + knockback_velocity
+	if attack.has_method("is_target_in_range"):
+		if attack.is_target_in_range():
+			return false
 
-	move_and_slide()
+	return true
+
+
+# -------------------------------------------------------------------
+# KNOCKBACK
+# -------------------------------------------------------------------
 
 func apply_knockback(direction: Vector2, force: float) -> void:
-	if movement != null and movement.has_method("apply_knockback"):
-		movement.apply_knockback(direction, force)
+	if movement == null:
 		return
 
-	# Fallback por si falta el nodo Movement.
-	if direction.length() <= 0.01:
+	if not movement.has_method("apply_knockback"):
 		return
 
-	var final_force: float = force * (1.0 - knockback_resistance)
+	movement.apply_knockback(direction, force)
 
-	if final_force <= 0.0:
-		return
-
-	knockback_velocity += direction.normalized() * final_force
-
-func update_knockback(delta: float) -> void:
-	# Reduce progresivamente el empuje hasta llegar a cero.
-	knockback_velocity = knockback_velocity.move_toward(
-		Vector2.ZERO,
-		knockback_friction * delta
-	)
 
 # -------------------------------------------------------------------
 # VIDA / DAÑO / MUERTE
@@ -222,13 +218,13 @@ func take_damage(amount: float) -> void:
 	else:
 		queue_redraw()
 
+
 func start_hit_flash() -> void:
 	hit_flash_timer = hit_flash_duration
 
-	# Si más adelante hay sprite, podemos modularlo.
-	# De momento lo dejamos preparado sin depender del sprite.
 	if animated_sprite != null:
 		animated_sprite.modulate = hit_flash_color
+
 
 func die() -> void:
 	print(name, " muere")
@@ -245,6 +241,7 @@ func die() -> void:
 	# Más adelante, si hay animación de muerte, esperaremos a que termine.
 	queue_free()
 
+
 func update_hit_flash(delta: float) -> void:
 	if hit_flash_timer <= 0.0:
 		return
@@ -256,6 +253,7 @@ func update_hit_flash(delta: float) -> void:
 
 		if animated_sprite != null:
 			animated_sprite.modulate = Color.WHITE
+
 
 # -------------------------------------------------------------------
 # VISUAL / ANIMACIÓN
@@ -344,17 +342,3 @@ func draw_health_bar() -> void:
 		Rect2(bar_position, Vector2(bar_width * health_ratio, bar_height)),
 		Color(0.9, 0.25, 0.25)
 	)
-	
-func should_chase_target() -> bool:
-	if attack == null:
-		return true
-
-	if attack.has_method("is_busy"):
-		if attack.is_busy():
-			return false
-
-	if attack.has_method("is_target_in_range"):
-		if attack.is_target_in_range():
-			return false
-
-	return true
