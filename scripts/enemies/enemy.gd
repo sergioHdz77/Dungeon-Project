@@ -1,5 +1,8 @@
 extends CharacterBody2D
 
+
+
+@onready var attack: Node = get_node_or_null("Attack")
 # -------------------------------------------------------------------
 # STATS BASE
 # -------------------------------------------------------------------
@@ -101,7 +104,9 @@ func setup(
 	health = max_health
 
 	queue_redraw()
-
+	
+	if attack != null and attack.has_method("setup"):
+		attack.setup(self, target, contact_damage)
 
 func cache_visual_nodes() -> void:
 	visuals = get_node_or_null("Visuals") as Node2D
@@ -122,10 +127,17 @@ func _physics_process(delta: float) -> void:
 
 	update_hit_flash(delta)
 	update_knockback(delta)
-	move_towards_target()
-	apply_contact_damage(delta)
-	update_visual_direction()
 
+	if attack != null and attack.has_method("process_attack"):
+		attack.process_attack(delta)
+
+	if should_chase_target():
+		move_towards_target()
+	else:
+		velocity = knockback_velocity
+		move_and_slide()
+
+	update_visual_direction()
 	queue_redraw()
 
 
@@ -163,28 +175,6 @@ func update_knockback(delta: float) -> void:
 		Vector2.ZERO,
 		knockback_friction * delta
 	)
-
-func apply_contact_damage(delta: float) -> void:
-	for i in get_slide_collision_count():
-		var collision: KinematicCollision2D = get_slide_collision(i)
-		var collider: Object = collision.get_collider()
-
-		if collider == null:
-			continue
-
-		var collider_node := collider as Node
-
-		if collider_node == null:
-			continue
-
-		# Los enemigos solo dañan al jugador.
-		# Evita que un enemigo intente dañar a otro enemigo.
-		if not collider_node.is_in_group("player") and collider_node.name != "Player":
-			continue
-
-		if collider_node.has_method("take_damage"):
-			collider_node.take_damage(contact_damage * delta, self)
-
 
 # -------------------------------------------------------------------
 # VIDA / DAÑO / MUERTE
@@ -334,3 +324,17 @@ func draw_health_bar() -> void:
 		Rect2(bar_position, Vector2(bar_width * health_ratio, bar_height)),
 		Color(0.9, 0.25, 0.25)
 	)
+	
+func should_chase_target() -> bool:
+	if attack == null:
+		return true
+
+	if attack.has_method("is_busy"):
+		if attack.is_busy():
+			return false
+
+	if attack.has_method("is_target_in_range"):
+		if attack.is_target_in_range():
+			return false
+
+	return true

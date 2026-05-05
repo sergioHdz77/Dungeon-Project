@@ -438,7 +438,7 @@ resource_name = "weapon_attack_side"
 length = 0.16
 tracks/0/type = "value"
 tracks/0/imported = false
-tracks/0/enabled = true
+tracks/0/enabled = false
 tracks/0/path = NodePath("WeaponSocket:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
@@ -455,10 +455,10 @@ tracks/1/path = NodePath("WeaponSocket:rotation")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.08, 0.16),
-"transitions": PackedFloat32Array(1, 1, 1),
+"times": PackedFloat32Array(0, 0.05, 0.09998157, 0.1, 0.16),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
 "update": 0,
-"values": [0.0, 0.7853982, -0.61086524]
+"values": [-0.7853982, 0.34906584, 0.9599311, 1.5603243, -0.61086524]
 }
 tracks/2/type = "method"
 tracks/2/imported = false
@@ -563,13 +563,15 @@ script = ExtResource("3_4kuee")
 
 [node name="Attack" type="Node" parent="Combat" unique_id=1704303625]
 script = ExtResource("11_8qjgm")
+melee_range = 45.0
+melee_arc_degrees = 40.0
 
 [node name="Block" type="Node" parent="Combat" unique_id=1447500424]
 script = ExtResource("12_ejd4k")
 
 [node name="Progression" type="Node" parent="." unique_id=99627898]
 script = ExtResource("4_524rm")
-max_health = 900.0
+max_health = 9999.0
 
 [node name="Movement" type="Node" parent="." unique_id=1962336015]
 script = ExtResource("11_ov1oi")
