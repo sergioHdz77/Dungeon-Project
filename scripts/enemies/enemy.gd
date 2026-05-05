@@ -3,6 +3,7 @@ extends CharacterBody2D
 
 
 @onready var attack: Node = get_node_or_null("Attack")
+@onready var movement: Node = get_node_or_null("Movement")
 # -------------------------------------------------------------------
 # STATS BASE
 # -------------------------------------------------------------------
@@ -79,7 +80,8 @@ func _ready() -> void:
 	add_to_group("enemies")
 
 	cache_visual_nodes()
-
+	setup_components()
+	
 	if health <= 0.0:
 		health = max_health
 
@@ -103,8 +105,23 @@ func setup(
 
 	health = max_health
 
+	if attack != null and attack.has_method("setup"):
+		attack.setup(self, target, contact_damage)
+		
+	setup_components()
 	queue_redraw()
 	
+func setup_components() -> void:
+	if movement != null and movement.has_method("setup"):
+		movement.setup(
+			self,
+			target,
+			speed,
+			knockback_resistance,
+			knockback_friction,
+			chase_control_during_knockback
+		)
+
 	if attack != null and attack.has_method("setup"):
 		attack.setup(self, target, contact_damage)
 
@@ -126,16 +143,24 @@ func _physics_process(delta: float) -> void:
 		return
 
 	update_hit_flash(delta)
-	update_knockback(delta)
+
+	if movement != null and movement.has_method("update_knockback"):
+		movement.update_knockback(delta)
 
 	if attack != null and attack.has_method("process_attack"):
 		attack.process_attack(delta)
 
 	if should_chase_target():
-		move_towards_target()
+		if movement != null and movement.has_method("move_towards_target"):
+			movement.move_towards_target()
+		else:
+			move_towards_target()
 	else:
-		velocity = knockback_velocity
-		move_and_slide()
+		if movement != null and movement.has_method("stop_and_slide"):
+			movement.stop_and_slide()
+		else:
+			velocity = Vector2.ZERO
+			move_and_slide()
 
 	update_visual_direction()
 	queue_redraw()
@@ -156,9 +181,11 @@ func move_towards_target() -> void:
 	move_and_slide()
 
 func apply_knockback(direction: Vector2, force: float) -> void:
-	# Aplica empuje al enemigo.
-	# La resistencia se configura en cada escena de enemigo.
+	if movement != null and movement.has_method("apply_knockback"):
+		movement.apply_knockback(direction, force)
+		return
 
+	# Fallback por si falta el nodo Movement.
 	if direction.length() <= 0.01:
 		return
 

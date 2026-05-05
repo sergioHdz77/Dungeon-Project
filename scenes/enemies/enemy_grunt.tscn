@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dgomvbjdehfja" path="res://scripts/enemies/enemy.gd" id="1_55jtl"]
 [ext_resource type="Texture2D" uid="uid://cvcdbd7b5vb22" path="res://art/enemyFlyingAlt_2.png" id="2_md0e3"]
 [ext_resource type="Script" uid="uid://becgjnrv31sjg" path="res://scripts/enemies/enemy_attack.gd" id="3_c7ls5"]
+[ext_resource type="Script" uid="uid://c5qqvdoj58dyc" path="res://scripts/enemies/enemy_movement.gd" id="4_tvvd1"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_v6fml"]
 radius = 5.23344
@@ -24,3 +25,6 @@ shape = SubResource("CircleShape2D_v6fml")
 
 [node name="Attack" type="Node" parent="." unique_id=2010819422]
 script = ExtResource("3_c7ls5")
+
+[node name="Movement" type="Node" parent="." unique_id=1569250247]
+script = ExtResource("4_tvvd1")
