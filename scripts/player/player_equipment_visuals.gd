@@ -35,7 +35,8 @@ extends Node2D
 @export var armor_visual_entries: Array[EquipmentVisualEntry] = []
 
 @export_group("Weapon Socket Poses")
-@export var weapon_socket_side_position: Vector2 = Vector2(7, 1)
+@export var weapon_socket_side_right_position: Vector2 = Vector2(7, 1)
+@export var weapon_socket_side_left_position: Vector2 = Vector2(-7, 1)
 @export var weapon_socket_front_position: Vector2 = Vector2(4, 6)
 @export var weapon_socket_back_position: Vector2 = Vector2(-3, -5)
 
@@ -280,16 +281,16 @@ func apply_weapon_socket_idle_pose(direction: Vector2) -> void:
 
 	if absf(normalized_direction.x) >= absf(normalized_direction.y):
 		# Lateral: usamos el arma delantera.
-		weapon_socket.position = weapon_socket_side_position
-		weapon_socket.rotation_degrees = idle_rotation
-		weapon_socket.z_index = weapon_socket_side_z_index
-
 		if normalized_direction.x < 0.0:
+			weapon_socket.position = weapon_socket_side_left_position
 			weapon_socket.scale.x = -1.0
 		else:
+			weapon_socket.position = weapon_socket_side_right_position
 			weapon_socket.scale.x = 1.0
 
+		weapon_socket.rotation_degrees = idle_rotation
 		weapon_socket.scale.y = 1.0
+		weapon_socket.z_index = weapon_socket_side_z_index
 
 		if weapon_visual != null:
 			weapon_visual.visible = true

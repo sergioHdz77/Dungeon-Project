@@ -473,7 +473,8 @@ position = Vector2(-11, 0)
 scale = Vector2(3, 3)
 script = ExtResource("17_ejd4k")
 weapon_visual_entries = Array[ExtResource("18_pi3ps")]([SubResource("Resource_v5i4m")])
-weapon_socket_side_position = Vector2(-12.5, -3)
+weapon_socket_side_right_position = Vector2(-13, -3)
+weapon_socket_side_left_position = Vector2(20, -3)
 weapon_socket_front_position = Vector2(-13, -3)
 
 [node name="WeaponSocket" type="Node2D" parent="EquipmentVisuals" unique_id=578468954]
