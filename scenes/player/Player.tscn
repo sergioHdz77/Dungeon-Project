@@ -483,7 +483,7 @@ _data = {
 }
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_tpg5x"]
-size = Vector2(2.7083333, 6.291667)
+size = Vector2(5, 11.333334)
 
 [node name="Player" type="CharacterBody2D" unique_id=1173866472]
 script = ExtResource("1_c3xxp")
@@ -515,7 +515,7 @@ script = ExtResource("14_ro0t8")
 texture_filter = 1
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_c3xxp")
-animation = &"idle_back"
+animation = &"idle_side"
 
 [node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
 texture_filter = 1
@@ -548,7 +548,7 @@ width = 3.0
 script = ExtResource("14_ro0t8")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
-position = Vector2(2.3841858e-07, -8)
+position = Vector2(0.99999976, -5.999999)
 scale = Vector2(6, 6)
 shape = SubResource("RectangleShape2D_tpg5x")
 
@@ -563,8 +563,8 @@ script = ExtResource("3_4kuee")
 
 [node name="Attack" type="Node" parent="Combat" unique_id=1704303625]
 script = ExtResource("11_8qjgm")
-melee_range = 45.0
-melee_arc_degrees = 40.0
+melee_range = 70.0
+melee_arc_degrees = 90.0
 
 [node name="Block" type="Node" parent="Combat" unique_id=1447500424]
 script = ExtResource("12_ejd4k")

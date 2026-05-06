@@ -164,9 +164,19 @@ func _physics_process(delta: float) -> void:
 	if should_chase_target():
 		if movement != null and movement.has_method("move_towards_target"):
 			movement.move_towards_target()
+
+		# Si el enemigo vuelve a perseguir después de atacar,
+		# forzamos animación de movimiento.
+		# Esto evita que se quede clavado en el último frame de "attack".
+		play_animation("move")
 	else:
 		if movement != null and movement.has_method("stop_and_slide"):
 			movement.stop_and_slide()
+
+		# Si no está atacando y tampoco persigue, está quieto en rango.
+		# Visualmente debería estar en idle.
+		if not is_attack_busy():
+			play_animation("idle")
 
 	update_visual_direction()
 	queue_redraw()
@@ -186,6 +196,14 @@ func should_chase_target() -> bool:
 
 	return true
 
+func is_attack_busy() -> bool:
+	if attack == null:
+		return false
+
+	if not attack.has_method("is_busy"):
+		return false
+
+	return attack.is_busy()
 
 # -------------------------------------------------------------------
 # KNOCKBACK
