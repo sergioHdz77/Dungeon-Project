@@ -6,12 +6,12 @@ extends Area2D
 # - bloqueo/desbloqueo
 # - dirección lógica north/south/east/west
 # - activarse/desactivarse según conexiones del mapa procedural
+# - evitar cambios de estado de físicas mientras Godot está procesando body_entered
 
 signal exit_requested
 signal directional_exit_requested(direction: String)
 
 @export var locked: bool = true
-
 @export_enum("north", "south", "east", "west") var direction: String = "east"
 
 @export var door_size: Vector2 = Vector2(80, 36)
@@ -20,59 +20,40 @@ signal directional_exit_requested(direction: String)
 @export var locked_color: Color = Color(0.45, 0.15, 0.15, 0.85)
 @export var border_color: Color = Color(0.95, 0.95, 0.95, 0.9)
 
-var exit_enabled: bool = true
+@onready var collision_shape: CollisionShape2D = get_node_or_null("CollisionShape2D")
 
-var temporary_disabled_timer: float = 0.0
+var exit_enabled: bool = true
+var temporarily_disabled: bool = false
+var exit_request_pending: bool = false
+
 
 func _ready() -> void:
 	z_index = 30
 
-	body_entered.connect(_on_body_entered)
+	var callback := Callable(self, "_on_body_entered")
+
+	if not body_entered.is_connected(callback):
+		body_entered.connect(callback)
 
 	apply_enabled_state()
 	queue_redraw()
 
-func _process(delta: float) -> void:
-	if temporary_disabled_timer <= 0.0:
-		return
 
-	temporary_disabled_timer -= delta
-
-	if temporary_disabled_timer < 0.0:
-		temporary_disabled_timer = 0.0
-		
 func set_exit_enabled(value: bool) -> void:
 	# Activa o desactiva completamente esta salida.
 	# Si está desactivada:
 	# - no se ve
 	# - no detecta al jugador
-	# - no emite señales
+	# - no emite señales.
 
 	exit_enabled = value
 	apply_enabled_state()
 	queue_redraw()
-	
-func set_temporary_disabled(duration: float) -> void:
-	# Evita que la puerta se active justo al cargar una sala
-	# si el jugador aparece dentro o demasiado cerca del área.
-	temporary_disabled_timer = max(temporary_disabled_timer, duration)
-
-func apply_enabled_state() -> void:
-	visible = exit_enabled
-	monitoring = exit_enabled
-	monitorable = exit_enabled
-
-	for child in get_children():
-		var collision_shape := child as CollisionShape2D
-
-		if collision_shape == null:
-			continue
-
-		collision_shape.disabled = not exit_enabled
 
 
 func set_locked(value: bool) -> void:
 	locked = value
+	apply_enabled_state()
 	queue_redraw()
 
 
@@ -84,8 +65,40 @@ func lock() -> void:
 	set_locked(true)
 
 
+func set_temporary_disabled(duration: float) -> void:
+	temporarily_disabled = true
+	apply_enabled_state()
+	queue_redraw()
+
+	await get_tree().create_timer(duration).timeout
+
+	if not is_inside_tree():
+		return
+
+	temporarily_disabled = false
+	exit_request_pending = false
+
+	apply_enabled_state()
+	queue_redraw()
+
+
+func apply_enabled_state() -> void:
+	var should_be_active: bool = exit_enabled and not locked and not temporarily_disabled
+
+	visible = exit_enabled
+
+	# Importante:
+	# Usamos set_deferred porque esta función puede ejecutarse indirectamente
+	# desde señales físicas como body_entered.
+	set_deferred("monitoring", should_be_active)
+	set_deferred("monitorable", should_be_active)
+
+	if collision_shape != null:
+		collision_shape.set_deferred("disabled", not should_be_active)
+
+
 func _on_body_entered(body: Node) -> void:
-	if temporary_disabled_timer > 0.0:
+	if exit_request_pending:
 		return
 
 	if not exit_enabled:
@@ -94,11 +107,35 @@ func _on_body_entered(body: Node) -> void:
 	if locked:
 		return
 
-	if not body.is_in_group("player") and body.name != "Player":
+	if temporarily_disabled:
 		return
 
-	exit_requested.emit()
+	if not body.is_in_group("player"):
+		return
+
+	exit_request_pending = true
+
+	# Diferimos la emisión para no cambiar de sala dentro del flush de físicas.
+	call_deferred("emit_exit_requested_deferred")
+
+
+func emit_exit_requested_deferred() -> void:
+	if not exit_enabled:
+		exit_request_pending = false
+		return
+
+	if locked:
+		exit_request_pending = false
+		return
+
+	# No comprobamos temporarily_disabled aquí.
+	# La puerta podía haberse desactivado temporalmente después de detectar al player.
+	# Esta función representa una salida ya aceptada.
 	directional_exit_requested.emit(direction)
+	exit_requested.emit()
+
+	# Evita dobles disparos mientras se carga/mueve al player a la sala nueva.
+	set_temporary_disabled(0.25)
 
 
 func _draw() -> void:
