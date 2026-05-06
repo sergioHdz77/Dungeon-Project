@@ -139,16 +139,6 @@ func load_room_by_id(room_id: String, entered_from_direction: String = "") -> vo
 	# producidos por puertas, áreas o nodos antiguos todavía activos ese frame.
 	call_deferred("_finish_room_transition")
 
-
-func get_room_data(room_id: String) -> Dictionary:
-	var rooms: Dictionary = generated_map_data.get("rooms", {})
-
-	if not rooms.has(room_id):
-		return {}
-
-	return rooms[room_id]
-
-
 func get_scene_for_room_data(room_data: Dictionary) -> PackedScene:
 	var scene: PackedScene = room_data.get("scene", null) as PackedScene
 
@@ -175,6 +165,27 @@ func setup_current_room(room_data: Dictionary) -> void:
 			player,
 			current_difficulty,
 			already_cleared
+		)
+
+func configure_current_room_exits(room_data: Dictionary = {}) -> void:
+	if current_room == null:
+		return
+
+	var active_room_data: Dictionary = room_data
+
+	if active_room_data.is_empty():
+		active_room_data = get_current_room_data()
+
+	if active_room_data.is_empty():
+		return
+
+	var connections: Dictionary = active_room_data.get("connections", {})
+	var room_type: String = str(active_room_data.get("type", ""))
+
+	if current_room.has_method("configure_exit_doors_for_connections"):
+		current_room.configure_exit_doors_for_connections(
+			connections,
+			room_type
 		)
 		
 func setup_room_scene_resolver() -> void:
@@ -241,47 +252,86 @@ func print_loaded_room_debug(room_id: String, room_data: Dictionary) -> void:
 		current_difficulty
 	)
 
-
 # -------------------------------------------------------------------
 # ESTADO DE SALAS
 # -------------------------------------------------------------------
 
-func mark_room_as_visited(room_id: String) -> void:
-	var rooms: Dictionary = generated_map_data.get("rooms", {})
+func get_rooms_data() -> Dictionary:
+	return generated_map_data.get("rooms", {})
+
+
+func set_rooms_data(rooms: Dictionary) -> void:
+	generated_map_data["rooms"] = rooms
+
+
+func has_room_data(room_id: String) -> bool:
+	if room_id.is_empty():
+		return false
+
+	var rooms: Dictionary = get_rooms_data()
+
+	return rooms.has(room_id)
+
+
+func get_room_data(room_id: String) -> Dictionary:
+	if room_id.is_empty():
+		return {}
+
+	var rooms: Dictionary = get_rooms_data()
+
+	if not rooms.has(room_id):
+		return {}
+
+	return rooms[room_id]
+
+
+func set_room_data(room_id: String, room_data: Dictionary) -> void:
+	if room_id.is_empty():
+		return
+
+	var rooms: Dictionary = get_rooms_data()
 
 	if not rooms.has(room_id):
 		return
 
-	var room_data: Dictionary = rooms[room_id]
-	room_data["is_visited"] = true
 	rooms[room_id] = room_data
-	generated_map_data["rooms"] = rooms
+	set_rooms_data(rooms)
+
+
+func get_current_room_data() -> Dictionary:
+	return get_room_data(current_room_id)
+
+
+func set_current_room_data(room_data: Dictionary) -> void:
+	set_room_data(current_room_id, room_data)
+
+
+func mark_room_as_visited(room_id: String) -> void:
+	var room_data: Dictionary = get_room_data(room_id)
+
+	if room_data.is_empty():
+		return
+
+	room_data["is_visited"] = true
+	set_room_data(room_id, room_data)
+
+
+func mark_room_as_cleared(room_id: String) -> void:
+	var room_data: Dictionary = get_room_data(room_id)
+
+	if room_data.is_empty():
+		return
+
+	room_data["is_cleared"] = true
+	set_room_data(room_id, room_data)
 
 
 func mark_current_room_as_cleared() -> void:
 	if current_room_id.is_empty():
 		return
 
-	var rooms: Dictionary = generated_map_data.get("rooms", {})
-
-	if not rooms.has(current_room_id):
-		return
-
-	var room_data: Dictionary = rooms[current_room_id]
-	room_data["is_cleared"] = true
-	rooms[current_room_id] = room_data
-	generated_map_data["rooms"] = rooms
-
-func configure_current_room_exits(room_data: Dictionary) -> void:
-	if current_room == null:
-		return
-
-	var connections: Dictionary = room_data.get("connections", {})
-	var room_type: String = str(room_data.get("type", ""))
-
-	if current_room.has_method("configure_exit_doors_for_connections"):
-		current_room.configure_exit_doors_for_connections(connections, room_type)
-
+	mark_room_as_cleared(current_room_id)
+	
 # -------------------------------------------------------------------
 # CAMBIO DE SALA
 # -------------------------------------------------------------------
