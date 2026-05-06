@@ -25,7 +25,7 @@ func setup(owner_player: Node2D) -> void:
 	stamina = max_stamina
 
 
-func process_block(delta: float, facing_direction: Vector2) -> void:
+func process_block(delta: float, _facing_direction: Vector2) -> void:
 	var wants_to_block: bool = Input.is_action_pressed("block")
 
 	if wants_to_block and stamina >= minimum_stamina_to_block:

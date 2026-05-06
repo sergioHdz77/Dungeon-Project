@@ -11,8 +11,6 @@ var equipment: Node = null
 var visuals: Node2D = null
 var animated_sprite: AnimatedSprite2D = null
 var equipment_visuals: Node = null
-var weapon_visual: Node2D = null
-var armor_visual: Node2D = null
 
 var animation_lock_timer: float = 0.0
 var visual_facing_direction: Vector2 = Vector2.RIGHT
@@ -23,17 +21,14 @@ func setup(owner_player: CharacterBody2D, equipment_component: Node) -> void:
 	player = owner_player
 	equipment = equipment_component
 	_cache_visual_nodes()
-	refresh_equipment_visuals()
 	play_idle()
 
-	if equipment != null and equipment.has_signal("equipment_changed"):
-		equipment.equipment_changed.connect(refresh_equipment_visuals)
 		
 func _ready() -> void:
-	var player: Node = get_parent()
+	var owner_player: Node = get_parent()
 
-	if player != null:
-		equipment_visuals = player.get_node_or_null("EquipmentVisuals")
+	if owner_player != null:
+		equipment_visuals = owner_player.get_node_or_null("EquipmentVisuals")
 
 func process_visuals(delta: float) -> void:
 	if player == null:
@@ -81,10 +76,6 @@ func _cache_visual_nodes() -> void:
 		animated_sprite = visuals.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 
 	equipment_visuals = player.get_node_or_null("EquipmentVisuals") as Node2D
-	if equipment_visuals != null:
-		weapon_visual = equipment_visuals.get_node_or_null("WeaponVisual") as Node2D
-		armor_visual = equipment_visuals.get_node_or_null("ArmorVisual") as Node2D
-
 
 func _update_visual_direction_from_velocity() -> void:
 	if animated_sprite == null:
@@ -188,17 +179,6 @@ func play_animation_with_fallback(
 
 func has_animated_visuals() -> bool:
 	return animated_sprite != null and animated_sprite.sprite_frames != null
-
-func refresh_equipment_visuals() -> void:
-	if equipment == null:
-		return
-
-	if weapon_visual != null and equipment.has_method("get_equipped_weapon_id"):
-		weapon_visual.visible = not equipment.get_equipped_weapon_id().is_empty()
-
-	if armor_visual != null and equipment.has_method("get_equipped_armor_id"):
-		armor_visual.visible = not equipment.get_equipped_armor_id().is_empty()
-
 
 func _on_weapon_equipped(weapon_id: String, weapon_data: Dictionary) -> void:
 	print("VisualController: arma equipada: ", weapon_id)

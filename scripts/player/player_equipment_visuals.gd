@@ -65,7 +65,7 @@ func _ready() -> void:
 		if not weapon_back_animation_player.animation_finished.is_connected(_on_back_weapon_animation_finished):
 			weapon_back_animation_player.animation_finished.connect(_on_back_weapon_animation_finished)
 
-func show_weapon(weapon_id: String, weapon_data: Dictionary) -> void:
+func show_weapon(weapon_id: String, _weapon_data: Dictionary) -> void:
 	
 	sync_back_visuals_transform()
 
@@ -124,7 +124,7 @@ func show_weapon(weapon_id: String, weapon_data: Dictionary) -> void:
 	print("EquipmentVisuals: mostrando arma anclada a socket: ", weapon_id)
 
 
-func show_armor(armor_id: String, armor_data: Dictionary) -> void:
+func show_armor(armor_id: String, _armor_data: Dictionary) -> void:
 	if armor_visual == null:
 		return
 
