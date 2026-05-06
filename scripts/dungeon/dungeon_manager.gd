@@ -1,6 +1,7 @@
 extends Node
 
 const DungeonMapGenerator = preload("res://scripts/dungeon/dungeon_map_generator.gd")
+const DungeonRoomSceneResolver = preload("res://scripts/dungeon/dungeon_room_scene_resolver.gd")
 
 # Gestiona el mapa procedural de la mazmorra.
 #
@@ -41,6 +42,8 @@ var current_difficulty: int = 1
 var generated_map_data: Dictionary = {}
 var is_changing_room: bool = false
 
+var room_scene_resolver: DungeonRoomSceneResolver = null
+
 # -------------------------------------------------------------------
 # CREACIÓN DE MAZMORRA
 # -------------------------------------------------------------------
@@ -52,7 +55,7 @@ func create_test_dungeon(difficulty: int = 1) -> void:
 
 func create_dungeon(difficulty: int = 1) -> void:
 	clear_rooms()
-	
+
 	is_changing_room = false
 	current_difficulty = max(1, difficulty)
 
@@ -62,9 +65,11 @@ func create_dungeon(difficulty: int = 1) -> void:
 
 	# Asignamos una escena real a cada sala del mapa.
 	# Esto evita que una sala de combate cambie de variante si se vuelve a cargar.
-	assign_scenes_to_generated_map()
+	setup_room_scene_resolver()
 
-	debug_print_room_scene_mapping(generated_map_data)
+	if room_scene_resolver != null:
+		generated_map_data = room_scene_resolver.assign_scenes_to_map(generated_map_data)
+		room_scene_resolver.debug_print_room_scene_mapping(generated_map_data)
 
 	current_room_id = str(generated_map_data.get("start_room_id", ""))
 
@@ -80,77 +85,6 @@ func create_dungeon(difficulty: int = 1) -> void:
 		" | Start room: ",
 		current_room_id
 	)
-
-
-func assign_scenes_to_generated_map() -> void:
-	var rooms: Dictionary = generated_map_data.get("rooms", {})
-
-	for room_id in rooms.keys():
-		var room_data: Dictionary = rooms[room_id]
-		var scene: PackedScene = get_room_scene_for_room_data(room_data)
-
-		room_data["scene"] = scene
-		rooms[room_id] = room_data
-
-	generated_map_data["rooms"] = rooms
-
-
-func get_room_scene_for_room_data(room_data: Dictionary) -> PackedScene:
-	var room_type: String = str(room_data.get("type", ""))
-
-	match room_type:
-		"start":
-			return start_room_scene
-
-		"combat":
-			return pick_combat_room_scene()
-
-		"boss":
-			return boss_room_scene
-
-		_:
-			push_warning("DungeonManager: tipo de sala desconocido: %s" % room_type)
-			return null
-
-
-func pick_combat_room_scene() -> PackedScene:
-	if not combat_room_scenes.is_empty():
-		var random_index: int = randi_range(0, combat_room_scenes.size() - 1)
-		return combat_room_scenes[random_index]
-
-	return combat_room_scene
-
-
-func debug_print_room_scene_mapping(map_data: Dictionary) -> void:
-	var rooms: Dictionary = map_data.get("rooms", {})
-
-	print("")
-	print("========== ROOM SCENE MAPPING DEBUG ==========")
-
-	for room_id in rooms.keys():
-		var room_data: Dictionary = rooms[room_id]
-		var room_type: String = str(room_data.get("type", "unknown"))
-		var scene: PackedScene = room_data.get("scene", null) as PackedScene
-
-		var scene_path: String = "NULL"
-
-		if scene != null:
-			if not scene.resource_path.is_empty():
-				scene_path = scene.resource_path
-			else:
-				scene_path = "PackedScene sin resource_path"
-
-		print(
-			room_id,
-			" | type: ",
-			room_type,
-			" | scene: ",
-			scene_path
-		)
-
-	print("==============================================")
-	print("")
-
 
 # -------------------------------------------------------------------
 # CARGA DE SALAS POR ROOM_ID
@@ -221,8 +155,13 @@ func get_scene_for_room_data(room_data: Dictionary) -> PackedScene:
 	if scene != null:
 		return scene
 
-	# Fallback por seguridad si alguna sala no tiene scene precalculada.
-	return get_room_scene_for_room_data(room_data)
+	if room_scene_resolver == null:
+		setup_room_scene_resolver()
+
+	if room_scene_resolver == null:
+		return null
+
+	return room_scene_resolver.get_room_scene_for_room_data(room_data)
 
 
 func setup_current_room(room_data: Dictionary) -> void:
@@ -237,7 +176,16 @@ func setup_current_room(room_data: Dictionary) -> void:
 			current_difficulty,
 			already_cleared
 		)
+		
+func setup_room_scene_resolver() -> void:
+	room_scene_resolver = DungeonRoomSceneResolver.new()
 
+	room_scene_resolver.setup(
+		start_room_scene,
+		combat_room_scene,
+		boss_room_scene,
+		combat_room_scenes
+	)
 
 func move_player_to_room_spawn(room: Node2D, entered_from_direction: String = "") -> void:
 	if player == null:
