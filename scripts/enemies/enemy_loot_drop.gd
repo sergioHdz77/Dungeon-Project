@@ -29,9 +29,32 @@ func drop_coin() -> void:
 	if coin_drop_scene == null:
 		return
 
-	var coin_drop = coin_drop_scene.instantiate()
+	var coin_drop := coin_drop_scene.instantiate() as Node2D
 
-	get_tree().current_scene.add_child(coin_drop)
+	if coin_drop == null:
+		return
+
+	var drop_parent: Node = get_drop_parent()
+	drop_parent.add_child(coin_drop)
 
 	if coin_drop.has_method("setup"):
 		coin_drop.setup(enemy.global_position + Vector2(8, 0), coin_value)
+	else:
+		coin_drop.global_position = enemy.global_position + Vector2(8, 0)
+
+
+func get_drop_parent() -> Node:
+	if enemy == null:
+		return get_tree().current_scene
+
+	var enemies_container: Node = enemy.get_parent()
+
+	if enemies_container == null:
+		return get_tree().current_scene
+
+	var room_node: Node = enemies_container.get_parent()
+
+	if room_node == null:
+		return enemies_container
+
+	return room_node
