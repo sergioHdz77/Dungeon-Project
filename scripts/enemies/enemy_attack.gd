@@ -35,6 +35,10 @@ extends Node
 # Seguridad para no dejar al enemigo atascado si la animación está mal configurada.
 @export var animation_timeout_margin: float = 0.10
 
+# Distancia extra para que el enemigo pare un poco antes de pegarse al player.
+# El daño seguirá usando attack_range.
+@export var chase_stop_extra_range: float = 10.0
+
 var enemy: Node2D = null
 var target: Node2D = null
 var animated_sprite: AnimatedSprite2D = null
@@ -269,9 +273,9 @@ func apply_attack_damage() -> void:
 	if target == null:
 		return
 
-	# Igual que antes: si el player se ha apartado antes del golpe,
-	# no recibe daño.
-	if not is_target_in_range():
+	# El enemigo puede empezar el ataque un poco antes,
+	# pero el daño real solo entra si el player está en rango de golpe.
+	if not is_target_in_hit_range():
 		return
 
 	if target.has_method("take_damage"):
@@ -308,6 +312,21 @@ func update_animation_after_attack() -> void:
 
 
 func is_target_in_range() -> bool:
+	return is_target_in_chase_stop_range()
+
+func is_target_in_chase_stop_range() -> bool:
+	if enemy == null:
+		return false
+
+	if target == null:
+		return false
+
+	var distance: float = enemy.global_position.distance_to(target.global_position)
+
+	return distance <= attack_range + chase_stop_extra_range
+
+
+func is_target_in_hit_range() -> bool:
 	if enemy == null:
 		return false
 
@@ -317,7 +336,6 @@ func is_target_in_range() -> bool:
 	var distance: float = enemy.global_position.distance_to(target.global_position)
 
 	return distance <= attack_range
-
-
+	
 func is_busy() -> bool:
 	return is_attacking
