@@ -32,7 +32,7 @@ combat_room_scenes = Array[PackedScene]([ExtResource("5_5xrq8"), ExtResource("7_
 
 [node name="Map" type="Node2D" parent="." unique_id=456897978]
 script = ExtResource("2_44pk5")
-map_size = Vector2(720, 420)
+map_size = Vector2(960, 640)
 
 [node name="RunSession" type="Node" parent="." unique_id=1465100974]
 script = ExtResource("9_ns4lk")

@@ -37,7 +37,7 @@ signal item_collected(item_id: String, display_name: String)
 # CONFIGURACIÓN VISUAL
 # -------------------------------------------------------------------
 
-@export var room_size: Vector2 = Vector2(720, 420)
+@export var room_size: Vector2 = Vector2(960, 640)
 @export var floor_color: Color = Color(0.18, 0.18, 0.20)
 @export var border_color: Color = Color(0.55, 0.55, 0.60)
 

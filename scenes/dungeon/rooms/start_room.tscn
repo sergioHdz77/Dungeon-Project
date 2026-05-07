@@ -10,35 +10,35 @@ script = ExtResource("1_vwi7l")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1521212431]
 
-[node name="Doors" type="Node2D" parent="." unique_id=1736277568]
+[node name="Doors" type="Node2D" parent="." unique_id=215501864]
 
-[node name="NorthDoor" type="Area2D" parent="Doors" unique_id=679331026]
-position = Vector2(0, -210)
+[node name="NorthDoor" type="Area2D" parent="Doors" unique_id=966032210]
+position = Vector2(0, -320)
 script = ExtResource("2_421mm")
 direction = "north"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/NorthDoor" unique_id=1173328294]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/NorthDoor" unique_id=2038116913]
 shape = SubResource("RectangleShape2D_421mm")
 
-[node name="SouthDoor" type="Area2D" parent="Doors" unique_id=459663371]
-position = Vector2(0, 210)
+[node name="SouthDoor" type="Area2D" parent="Doors" unique_id=1291502774]
+position = Vector2(0, 320)
 script = ExtResource("2_421mm")
 direction = "south"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/SouthDoor" unique_id=90956451]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/SouthDoor" unique_id=961442157]
 shape = SubResource("RectangleShape2D_421mm")
 
-[node name="EastDoor" type="Area2D" parent="Doors" unique_id=52213978]
-position = Vector2(360, 0)
+[node name="EastDoor" type="Area2D" parent="Doors" unique_id=2038986506]
+position = Vector2(480, 0)
 script = ExtResource("2_421mm")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=1435180903]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=914784284]
 shape = SubResource("RectangleShape2D_421mm")
 
-[node name="WestDoor" type="Area2D" parent="Doors" unique_id=1891797407]
-position = Vector2(-360, 0)
+[node name="WestDoor" type="Area2D" parent="Doors" unique_id=897477256]
+position = Vector2(-480, 0)
 script = ExtResource("2_421mm")
 direction = "west"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/WestDoor" unique_id=1805913151]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/WestDoor" unique_id=824080476]
 shape = SubResource("RectangleShape2D_421mm")

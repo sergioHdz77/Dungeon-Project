@@ -41,7 +41,7 @@ z_index = 10
 [node name="Doors" type="Node2D" parent="." unique_id=1181510352]
 
 [node name="NorthDoor" type="Area2D" parent="Doors" unique_id=547108838]
-position = Vector2(0, -210)
+position = Vector2(0, -320)
 script = ExtResource("3_fnekb")
 direction = "north"
 
@@ -49,7 +49,7 @@ direction = "north"
 shape = SubResource("RectangleShape2D_fnekb")
 
 [node name="SouthDoor" type="Area2D" parent="Doors" unique_id=2066164385]
-position = Vector2(0, 210)
+position = Vector2(0, 320)
 script = ExtResource("3_fnekb")
 direction = "south"
 
@@ -57,14 +57,14 @@ direction = "south"
 shape = SubResource("RectangleShape2D_fnekb")
 
 [node name="EastDoor" type="Area2D" parent="Doors" unique_id=2050829562]
-position = Vector2(360, 0)
+position = Vector2(480, 0)
 script = ExtResource("3_fnekb")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=1893381227]
 shape = SubResource("RectangleShape2D_fnekb")
 
 [node name="WestDoor" type="Area2D" parent="Doors" unique_id=1509567474]
-position = Vector2(-360, 0)
+position = Vector2(-480, 0)
 script = ExtResource("3_fnekb")
 direction = "west"
 
