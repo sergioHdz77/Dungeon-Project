@@ -38,6 +38,7 @@ signal item_collected(item_id: String, display_name: String)
 # -------------------------------------------------------------------
 
 @export var room_size: Vector2 = Vector2(960, 640)
+@export var draw_placeholder_background: bool = true
 @export var floor_color: Color = Color(0.18, 0.18, 0.20)
 @export var border_color: Color = Color(0.55, 0.55, 0.60)
 
@@ -352,6 +353,9 @@ func _on_room_loot_item_collected(item_id: String, display_name: String) -> void
 # -------------------------------------------------------------------
 
 func _draw() -> void:
+	if not draw_placeholder_background:
+		return
+
 	var rect := Rect2(
 		-room_size / 2.0,
 		room_size

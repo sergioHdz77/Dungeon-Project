@@ -5,12 +5,10 @@
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="3_5tx3h"]
 [ext_resource type="PackedScene" uid="uid://bfdx56kgv615u" path="res://scenes/enemies/enemy_fast.tscn" id="3_yirvs"]
 [ext_resource type="PackedScene" uid="uid://rpd5uj63mqxa" path="res://scenes/enemies/enemy_tank.tscn" id="4_jqpt6"]
+[ext_resource type="Script" uid="uid://gvyw3lhtlrkk" path="res://scripts/dungeon/rooms/room_bounds.gd" id="5_4p2kb"]
 [ext_resource type="Texture2D" uid="uid://blkkaqhpvsiol" path="res://art/tilesets/Dungeon_Tileset.png" id="5_xixtf"]
 [ext_resource type="Script" uid="uid://51f8fy1da0xx" path="res://scripts/dungeon/rooms/enemy_spawner.gd" id="5_yirvs"]
 [ext_resource type="Script" uid="uid://cxegowmnctdpk" path="res://scripts/dungeon/rooms/room_loot_drop.gd" id="6_jqpt6"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_4p2kb"]
-size = Vector2(640, 16)
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_0mblh"]
 texture = ExtResource("5_xixtf")
@@ -123,14 +121,12 @@ sources/0 = SubResource("TileSetAtlasSource_0mblh")
 [node name="CombatRoom" type="Node2D" unique_id=573488946]
 script = ExtResource("1_kg6fv")
 room_size = Vector2(640, 384)
+draw_placeholder_background = false
 enemy_scene = ExtResource("2_4bh6l")
 enemy_scenes = Array[PackedScene]([ExtResource("2_4bh6l"), ExtResource("3_yirvs"), ExtResource("4_jqpt6")])
 
-[node name="RoomBounds" type="StaticBody2D" parent="." unique_id=359750931]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="RoomBounds" unique_id=1620516099]
-position = Vector2(0, -192)
-shape = SubResource("RectangleShape2D_4p2kb")
+[node name="RoomBounds" type="StaticBody2D" parent="." unique_id=1419966865]
+script = ExtResource("5_4p2kb")
 
 [node name="GroundLayer" type="TileMapLayer" parent="." unique_id=1027702960]
 z_index = 1
