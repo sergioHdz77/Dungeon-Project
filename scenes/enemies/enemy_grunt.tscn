@@ -116,6 +116,7 @@ animation = &"idle"
 [node name="Attack" type="Node" parent="." unique_id=2010819422]
 script = ExtResource("3_c7ls5")
 attack_cooldown = 0.8
+chase_stop_extra_range = 14.0
 
 [node name="Movement" type="Node" parent="." unique_id=1569250247]
 script = ExtResource("4_tvvd1")
