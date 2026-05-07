@@ -9,7 +9,7 @@
 [ext_resource type="Script" uid="uid://y76pfrtjnwmi" path="res://scripts/enemies/enemy_loot_drop.gd" id="5_4awob"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_764eg"]
-size = Vector2(10.333334, 21)
+size = Vector2(10.333334, 24)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_764eg"]
 atlas = ExtResource("3_6xajn")
@@ -101,8 +101,7 @@ visible = false
 texture = ExtResource("2_md0e3")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370977721]
-position = Vector2(1.5, 6.500001)
-scale = Vector2(3, 3)
+position = Vector2(0.5, 2.0000005)
 shape = SubResource("RectangleShape2D_764eg")
 
 [node name="Visuals" type="Node2D" parent="." unique_id=414599218]

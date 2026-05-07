@@ -1,10 +1,11 @@
 [gd_scene format=4 uid="uid://f1qwwm0v8ok8"]
 
 [ext_resource type="Script" uid="uid://vfl2byp8j7t5" path="res://scripts/dungeon/rooms/dungeon_room.gd" id="1_vwi7l"]
+[ext_resource type="Script" uid="uid://gvyw3lhtlrkk" path="res://scripts/dungeon/rooms/room_bounds.gd" id="2_4shns"]
 [ext_resource type="Script" uid="uid://bqnooqswih0qi" path="res://scripts/dungeon/rooms/room_exit.gd" id="2_421mm"]
 [ext_resource type="Texture2D" uid="uid://blkkaqhpvsiol" path="res://art/tilesets/Dungeon_Tileset.png" id="3_pv6xr"]
 
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_4shns"]
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ddw4p"]
 texture = ExtResource("3_pv6xr")
 0:0/0 = 0
 1:0/0 = 0
@@ -108,13 +109,19 @@ texture = ExtResource("3_pv6xr")
 9:9/0 = 0
 
 [sub_resource type="TileSet" id="TileSet_ddw4p"]
-sources/0 = SubResource("TileSetAtlasSource_4shns")
+sources/0 = SubResource("TileSetAtlasSource_ddw4p")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_421mm"]
 
 [node name="StartRoom" type="Node2D" unique_id=1880824940]
 script = ExtResource("1_vwi7l")
 room_size = Vector2(640, 384)
+
+[node name="RoomBounds" type="StaticBody2D" parent="." unique_id=1476890017]
+
+[node name="CollisionShape2D" type="StaticBody2D" parent="RoomBounds" unique_id=1374725022]
+position = Vector2(0, -192)
+script = ExtResource("2_4shns")
 
 [node name="GroundLayer" type="TileMapLayer" parent="." unique_id=2028158046]
 z_index = 1
@@ -133,21 +140,21 @@ tile_set = SubResource("TileSet_ddw4p")
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1521212431]
 
 [node name="PlayerSpawnWest" type="Marker2D" parent="." unique_id=1619812842]
-position = Vector2(-307, 0)
+position = Vector2(-260, 0)
 
 [node name="PlayerSpawnEast" type="Marker2D" parent="." unique_id=1893200401]
-position = Vector2(301, 0)
+position = Vector2(260, 0)
 
 [node name="PlayerSpawnNorth" type="Marker2D" parent="." unique_id=1107538255]
-position = Vector2(0, -179)
+position = Vector2(0, -140)
 
 [node name="PlayerSpawnSouth" type="Marker2D" parent="." unique_id=2146733397]
-position = Vector2(0, 178)
+position = Vector2(0, 140)
 
 [node name="Doors" type="Node2D" parent="." unique_id=215501864]
 
 [node name="NorthDoor" type="Area2D" parent="Doors" unique_id=966032210]
-position = Vector2(0, -192)
+position = Vector2(0, -176)
 script = ExtResource("2_421mm")
 direction = "north"
 
@@ -155,7 +162,7 @@ direction = "north"
 shape = SubResource("RectangleShape2D_421mm")
 
 [node name="SouthDoor" type="Area2D" parent="Doors" unique_id=1291502774]
-position = Vector2(0, 192)
+position = Vector2(0, 176)
 script = ExtResource("2_421mm")
 direction = "south"
 
@@ -163,14 +170,14 @@ direction = "south"
 shape = SubResource("RectangleShape2D_421mm")
 
 [node name="EastDoor" type="Area2D" parent="Doors" unique_id=2038986506]
-position = Vector2(320, 0)
+position = Vector2(304, 0)
 script = ExtResource("2_421mm")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Doors/EastDoor" unique_id=914784284]
 shape = SubResource("RectangleShape2D_421mm")
 
 [node name="WestDoor" type="Area2D" parent="Doors" unique_id=897477256]
-position = Vector2(-320, 0)
+position = Vector2(-304, 0)
 script = ExtResource("2_421mm")
 direction = "west"
 
