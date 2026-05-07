@@ -10,6 +10,18 @@ script = ExtResource("1_vwi7l")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1521212431]
 
+[node name="PlayerSpawnWest" type="Marker2D" parent="." unique_id=1619812842]
+position = Vector2(-390, 0)
+
+[node name="PlayerSpawnEast" type="Marker2D" parent="." unique_id=1893200401]
+position = Vector2(390, 0)
+
+[node name="PlayerSpawnNorth" type="Marker2D" parent="." unique_id=1107538255]
+position = Vector2(0, -250)
+
+[node name="PlayerSpawnSouth" type="Marker2D" parent="." unique_id=2146733397]
+position = Vector2(0, 250)
+
 [node name="Doors" type="Node2D" parent="." unique_id=215501864]
 
 [node name="NorthDoor" type="Area2D" parent="Doors" unique_id=966032210]

@@ -205,17 +205,17 @@ func move_player_to_room_spawn(room: Node2D, entered_from_direction: String = ""
 
 	# Spawns opcionales para mapa procedural real.
 	# Si entras a la sala desde west, busca PlayerSpawnWest.
-	# Si no existe, usa PlayerSpawn normal.
+	# Usamos find_child para que funcione aunque estén dentro de un contenedor.
 	if not entered_from_direction.is_empty():
 		var directional_spawn_name: String = "PlayerSpawn%s" % entered_from_direction.capitalize()
-		var directional_spawn := room.get_node_or_null(directional_spawn_name) as Marker2D
+		var directional_spawn := room.find_child(directional_spawn_name, true, false) as Node2D
 
 		if directional_spawn != null:
 			player.global_position = directional_spawn.global_position
 			return
 
 	# Fallback actual.
-	var spawn := room.get_node_or_null("PlayerSpawn") as Marker2D
+	var spawn := room.find_child("PlayerSpawn", true, false) as Node2D
 
 	if spawn == null:
 		player.global_position = room.global_position

@@ -16,6 +16,18 @@ enemy_scene = ExtResource("2_lp04o")
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1235231117]
 position = Vector2(0, 140)
 
+[node name="PlayerSpawnWest" type="Marker2D" parent="." unique_id=1158695322]
+position = Vector2(-390, 0)
+
+[node name="PlayerSpawnEast" type="Marker2D" parent="." unique_id=700978749]
+position = Vector2(390, 0)
+
+[node name="PlayerSpawnNorth" type="Marker2D" parent="." unique_id=95947014]
+position = Vector2(0, -250)
+
+[node name="PlayerSpawnSouth" type="Marker2D" parent="." unique_id=783325559]
+position = Vector2(0, 250)
+
 [node name="EnemySpawner" type="Node" parent="." unique_id=730690087]
 script = ExtResource("4_umr0q")
 
