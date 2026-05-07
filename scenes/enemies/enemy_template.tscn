@@ -93,6 +93,7 @@ animations = [{
 }]
 
 [node name="EnemyTemplate" type="CharacterBody2D" unique_id=1173866472]
+z_index = 10
 script = ExtResource("1_78lir")
 use_placeholder_drawing = false
 

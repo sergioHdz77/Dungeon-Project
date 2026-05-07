@@ -43,6 +43,7 @@ script = ExtResource("10_n74up")
 [node name="Player" parent="." unique_id=1173866472 instance=ExtResource("3_phv0v")]
 
 [node name="Camera2D" type="Camera2D" parent="Player" unique_id=1240053873]
+zoom = Vector2(2.8, 2.8)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=957066943]
 process_mode = 3

@@ -486,6 +486,7 @@ _data = {
 size = Vector2(5, 11.333334)
 
 [node name="Player" type="CharacterBody2D" unique_id=1173866472]
+z_index = 10
 script = ExtResource("1_c3xxp")
 
 [node name="EquipmentBackVisuals" type="Node2D" parent="." unique_id=99627934]
@@ -513,14 +514,12 @@ script = ExtResource("14_ro0t8")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals" unique_id=1317566803]
 texture_filter = 1
-scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_c3xxp")
 animation = &"idle_side"
 
 [node name="EquipmentVisuals" type="Node2D" parent="." unique_id=1359714785]
 texture_filter = 1
 position = Vector2(-11, 0)
-scale = Vector2(3, 3)
 script = ExtResource("17_ejd4k")
 weapon_visual_entries = Array[ExtResource("18_pi3ps")]([SubResource("Resource_v5i4m")])
 weapon_socket_side_right_position = Vector2(-13, -3)
