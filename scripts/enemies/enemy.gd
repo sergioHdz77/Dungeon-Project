@@ -71,6 +71,20 @@ extends CharacterBody2D
 
 var hit_flash_timer: float = 0.0
 
+# -------------------------------------------------------------------
+# DETECCIÓN / AGGRO
+# -------------------------------------------------------------------
+
+# Distancia a la que el enemigo detecta al player.
+# Si el player está fuera de este rango, el enemigo no persigue.
+@export var vision_range: float = 220.0
+
+# Si está activo, cuando el enemigo ve al player una vez,
+# se queda agresivo hasta morir o hasta cambiar de sala.
+@export var keep_aggro_after_detection: bool = true
+
+# Estado interno: el enemigo ya ha detectado al player.
+var has_aggro: bool = false
 
 # -------------------------------------------------------------------
 # REFERENCIAS / ESTADO
@@ -183,6 +197,12 @@ func _physics_process(delta: float) -> void:
 
 
 func should_chase_target() -> bool:
+	if target == null:
+		return false
+
+	if not can_detect_target():
+		return false
+
 	if attack == null:
 		return true
 
@@ -195,7 +215,22 @@ func should_chase_target() -> bool:
 			return false
 
 	return true
+	
+func can_detect_target() -> bool:
+	if target == null:
+		return false
 
+	if has_aggro and keep_aggro_after_detection:
+		return true
+
+	var distance_to_target: float = global_position.distance_to(target.global_position)
+
+	if distance_to_target <= vision_range:
+		has_aggro = true
+		return true
+
+	return false
+	
 func is_attack_busy() -> bool:
 	if attack == null:
 		return false
