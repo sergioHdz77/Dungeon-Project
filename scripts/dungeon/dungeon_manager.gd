@@ -25,10 +25,6 @@ signal item_collected(item_id: String, display_name: String)
 @export var combat_room_scene: PackedScene
 @export var boss_room_scene: PackedScene
 
-# Variantes opcionales de salas de combate.
-# Si está vacío, usa combat_room_scene como fallback.
-@export var combat_room_scenes: Array[PackedScene] = []
-
 # Estos valores siguen existiendo para mantener coherencia con la generación actual.
 # Ahora el número real de salas viene de DungeonMapGenerator.
 @export var base_combat_rooms: int = 2
@@ -195,7 +191,6 @@ func setup_room_scene_resolver() -> void:
 		start_room_scene,
 		combat_room_scene,
 		boss_room_scene,
-		combat_room_scenes
 	)
 
 func move_player_to_room_spawn(room: Node2D, entered_from_direction: String = "") -> void:
