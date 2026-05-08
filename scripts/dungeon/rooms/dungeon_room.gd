@@ -78,6 +78,7 @@ func setup_room(
 	new_difficulty: int,
 	already_cleared: bool = false
 ) -> void:
+	refresh_child_references()
 	player = new_player
 	difficulty = new_difficulty
 	room_is_cleared = false
@@ -347,6 +348,9 @@ func drop_clear_loot() -> void:
 func _on_room_loot_item_collected(item_id: String, display_name: String) -> void:
 	item_collected.emit(item_id, display_name)
 
+func refresh_child_references() -> void:
+	enemy_spawner = get_node_or_null("EnemySpawner")
+	room_loot_drop = get_node_or_null("RoomLootDrop")
 
 # -------------------------------------------------------------------
 # DIBUJO PLACEHOLDER

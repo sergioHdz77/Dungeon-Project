@@ -59,12 +59,7 @@ func get_room_scene_for_room_data(room_data: Dictionary) -> PackedScene:
 			push_warning("DungeonRoomSceneResolver: tipo de sala desconocido: %s" % room_type)
 			return null
 
-
 func pick_combat_room_scene() -> PackedScene:
-	if not combat_room_scenes.is_empty():
-		var random_index: int = randi_range(0, combat_room_scenes.size() - 1)
-		return combat_room_scenes[random_index]
-
 	return combat_room_scene
 
 
