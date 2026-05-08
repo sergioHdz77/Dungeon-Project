@@ -115,7 +115,6 @@ sources/0 = SubResource("TileSetAtlasSource_ddw4p")
 
 [node name="StartRoom" type="Node2D" unique_id=1880824940]
 script = ExtResource("1_vwi7l")
-room_size = Vector2(640, 384)
 draw_placeholder_background = false
 
 [node name="RoomBounds" type="StaticBody2D" parent="." unique_id=1224048527]
