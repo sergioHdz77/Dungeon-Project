@@ -11,9 +11,11 @@ extends Node
 # Este script NO spawnea enemigos directamente.
 # Solo crea los nodos que DungeonRoom y EnemySpawner ya esperan.
 
-const RoomBoundsScript := preload("res://scripts/dungeon/rooms/room_bounds.gd")
-const RoomExitScript := preload("res://scripts/dungeon/rooms/room_exit.gd")
-const EnemySpawnerScript := preload("res://scripts/dungeon/rooms/enemy_spawner.gd")
+const RoomBoundsScript = preload("res://scripts/dungeon/rooms/room_bounds.gd")
+const RoomExitScript = preload("res://scripts/dungeon/rooms/room_exit.gd")
+const EnemySpawnerScript = preload("res://scripts/dungeon/rooms/enemy_spawner.gd")
+
+const INVALID_ENEMY_SPAWN := Vector2(999999.0, 999999.0)
 
 @export var tile_set: TileSet
 
@@ -35,18 +37,47 @@ const EnemySpawnerScript := preload("res://scripts/dungeon/rooms/enemy_spawner.g
 
 @export var default_player_spawn: Vector2 = Vector2(0, 120)
 
+# -------------------------------------------------------------------
+# SPAWNS DE ENEMIGOS PROCEDURALES
+# -------------------------------------------------------------------
+
+@export var randomize_enemy_spawns: bool = true
+
+# Si randomize_enemy_spawns es false, usa estas posiciones fijas.
 @export var enemy_spawn_positions: Array[Vector2] = [
 	Vector2(-160, 0),
 	Vector2(160, 0),
 	Vector2(0, -96)
 ]
 
+# Cantidad base de enemigos por sala.
+@export var enemy_spawn_count_min: int = 2
+@export var enemy_spawn_count_max: int = 3
+
+# A partir de dificultad 2, puede subir el máximo de enemigos.
+@export var enemy_spawn_bonus_per_difficulty: int = 1
+@export var enemy_spawn_absolute_max: int = 6
+
+# Márgenes de seguridad.
+@export var enemy_spawn_margin_from_walls: float = 64.0
+@export var enemy_spawn_min_distance_between_enemies: float = 96.0
+@export var enemy_spawn_min_distance_from_player_spawns: float = 96.0
+@export var enemy_spawn_min_distance_from_doors: float = 80.0
+
+# Intentos máximos para encontrar una posición válida.
+@export var enemy_spawn_attempts_per_enemy: int = 80
+
+var rng := RandomNumberGenerator.new()
+
 
 func generate(room_data: Dictionary = {}, difficulty: int = 1) -> void:
 	var room := get_parent() as Node2D
+
 	if room == null:
 		push_warning("ProceduralRoomBuilder: el padre no es Node2D.")
 		return
+
+	rng.randomize()
 
 	# Sin esto, DungeonRoom seguiría pintando su fondo placeholder.
 	room.set("room_size", room_size)
@@ -56,7 +87,7 @@ func generate(room_data: Dictionary = {}, difficulty: int = 1) -> void:
 	_create_room_bounds(room)
 	_create_player_spawns(room)
 	_create_doors(room)
-	_create_enemy_system(room)
+	_create_enemy_system(room, difficulty)
 
 
 func _create_tile_layers(room: Node2D) -> void:
@@ -76,10 +107,10 @@ func _create_tile_layers(room: Node2D) -> void:
 	var tiles_wide: int = int(room_size.x / float(tile_size))
 	var tiles_high: int = int(room_size.y / float(tile_size))
 
-	var start_x: int = -tiles_wide / 2
+	var start_x: int = -int(tiles_wide / 2)
 	var end_x: int = start_x + tiles_wide - 1
 
-	var start_y: int = -tiles_high / 2
+	var start_y: int = -int(tiles_high / 2)
 	var end_y: int = start_y + tiles_high - 1
 
 	for y in range(start_y, end_y + 1):
@@ -122,7 +153,11 @@ func _create_tile_layers(room: Node2D) -> void:
 		)
 
 
-func _get_or_create_tile_layer(room: Node2D, layer_name: String, layer_z_index: int) -> TileMapLayer:
+func _get_or_create_tile_layer(
+	room: Node2D,
+	layer_name: String,
+	layer_z_index: int
+) -> TileMapLayer:
 	var existing_layer := room.get_node_or_null(layer_name) as TileMapLayer
 
 	if existing_layer != null:
@@ -168,7 +203,11 @@ func _create_player_spawns(room: Node2D) -> void:
 	_get_or_create_marker(room, "PlayerSpawnSouth", Vector2(0, 140))
 
 
-func _get_or_create_marker(parent: Node, marker_name: String, marker_position: Vector2) -> Marker2D:
+func _get_or_create_marker(
+	parent: Node,
+	marker_name: String,
+	marker_position: Vector2
+) -> Marker2D:
 	var marker := parent.get_node_or_null(marker_name) as Marker2D
 
 	if marker == null:
@@ -266,7 +305,7 @@ func _ensure_door_collision_shape(door: Area2D) -> void:
 	rectangle_shape.size = door_size
 
 
-func _create_enemy_system(room: Node2D) -> void:
+func _create_enemy_system(room: Node2D, difficulty: int) -> void:
 	var enemies := room.get_node_or_null("Enemies") as Node2D
 
 	if enemies == null:
@@ -288,12 +327,14 @@ func _create_enemy_system(room: Node2D) -> void:
 	spawn_container.position = Vector2.ZERO
 	spawn_container.scale = Vector2.ONE
 
-	_clear_children(spawn_container)
+	_clear_children_immediate(spawn_container)
 
-	for i in range(enemy_spawn_positions.size()):
+	var resolved_spawn_positions := _get_enemy_spawn_positions(difficulty)
+
+	for i in range(resolved_spawn_positions.size()):
 		var marker := Marker2D.new()
 		marker.name = "EnemySpawnPoint%d" % (i + 1)
-		marker.position = enemy_spawn_positions[i]
+		marker.position = resolved_spawn_positions[i]
 		spawn_container.add_child(marker)
 
 	var enemy_spawner := room.get_node_or_null("EnemySpawner") as Node
@@ -306,6 +347,100 @@ func _create_enemy_system(room: Node2D) -> void:
 	enemy_spawner.set_script(EnemySpawnerScript)
 
 
-func _clear_children(node: Node) -> void:
+func _get_enemy_spawn_positions(difficulty: int) -> Array[Vector2]:
+	if not randomize_enemy_spawns:
+		return enemy_spawn_positions
+
+	var generated_positions: Array[Vector2] = []
+	var spawn_count := _get_enemy_spawn_count(difficulty)
+
+	for i in range(spawn_count):
+		var candidate: Vector2 = _find_valid_enemy_spawn_position(generated_positions)
+
+		if candidate == INVALID_ENEMY_SPAWN:
+			# Fallback: si no encuentra posición válida, usa una de las posiciones fijas.
+			if enemy_spawn_positions.size() > 0:
+				var fallback_index := i % enemy_spawn_positions.size()
+				generated_positions.append(enemy_spawn_positions[fallback_index])
+			continue
+
+		generated_positions.append(candidate)
+
+	return generated_positions
+
+
+func _get_enemy_spawn_count(difficulty: int) -> int:
+	var safe_difficulty: int = max(difficulty, 1)
+
+	var dynamic_max: int = enemy_spawn_count_max
+	dynamic_max += (safe_difficulty - 1) * enemy_spawn_bonus_per_difficulty
+	dynamic_max = min(dynamic_max, enemy_spawn_absolute_max)
+
+	var safe_min: int = min(enemy_spawn_count_min, dynamic_max)
+
+	return rng.randi_range(safe_min, dynamic_max)
+
+
+func _find_valid_enemy_spawn_position(existing_positions: Array[Vector2]) -> Vector2:
+	var half_width := room_size.x / 2.0
+	var half_height := room_size.y / 2.0
+
+	var min_x := -half_width + enemy_spawn_margin_from_walls
+	var max_x := half_width - enemy_spawn_margin_from_walls
+
+	var min_y := -half_height + enemy_spawn_margin_from_walls
+	var max_y := half_height - enemy_spawn_margin_from_walls
+
+	for attempt in range(enemy_spawn_attempts_per_enemy):
+		var candidate := Vector2(
+			rng.randf_range(min_x, max_x),
+			rng.randf_range(min_y, max_y)
+		)
+
+		if _is_valid_enemy_spawn_position(candidate, existing_positions):
+			return candidate
+
+	return INVALID_ENEMY_SPAWN
+
+
+func _is_valid_enemy_spawn_position(
+	candidate: Vector2,
+	existing_positions: Array[Vector2]
+) -> bool:
+	for existing_position in existing_positions:
+		if candidate.distance_to(existing_position) < enemy_spawn_min_distance_between_enemies:
+			return false
+
+	for player_spawn_position in _get_player_spawn_positions():
+		if candidate.distance_to(player_spawn_position) < enemy_spawn_min_distance_from_player_spawns:
+			return false
+
+	for door_position in _get_door_positions():
+		if candidate.distance_to(door_position) < enemy_spawn_min_distance_from_doors:
+			return false
+
+	return true
+
+
+func _get_player_spawn_positions() -> Array[Vector2]:
+	return [
+		default_player_spawn,
+		Vector2(-260, 0),
+		Vector2(260, 0),
+		Vector2(0, -140),
+		Vector2(0, 140)
+	]
+
+
+func _get_door_positions() -> Array[Vector2]:
+	return [
+		Vector2(0, -176),
+		Vector2(0, 176),
+		Vector2(304, 0),
+		Vector2(-304, 0)
+	]
+
+
+func _clear_children_immediate(node: Node) -> void:
 	for child in node.get_children():
-		child.queue_free()
+		child.free()
