@@ -12,19 +12,16 @@ extends RefCounted
 var start_room_scene: PackedScene = null
 var combat_room_scene: PackedScene = null
 var boss_room_scene: PackedScene = null
-var combat_room_scenes: Array[PackedScene] = []
 
 
 func setup(
 	new_start_room_scene: PackedScene,
 	new_combat_room_scene: PackedScene,
-	new_boss_room_scene: PackedScene,
-	new_combat_room_scenes: Array[PackedScene]
+	new_boss_room_scene: PackedScene
 ) -> void:
 	start_room_scene = new_start_room_scene
 	combat_room_scene = new_combat_room_scene
 	boss_room_scene = new_boss_room_scene
-	combat_room_scenes = new_combat_room_scenes
 
 
 func assign_scenes_to_map(map_data: Dictionary) -> Dictionary:
@@ -50,7 +47,7 @@ func get_room_scene_for_room_data(room_data: Dictionary) -> PackedScene:
 			return start_room_scene
 
 		"combat":
-			return pick_combat_room_scene()
+			return combat_room_scene
 
 		"boss":
 			return boss_room_scene
@@ -58,14 +55,6 @@ func get_room_scene_for_room_data(room_data: Dictionary) -> PackedScene:
 		_:
 			push_warning("DungeonRoomSceneResolver: tipo de sala desconocido: %s" % room_type)
 			return null
-
-
-func pick_combat_room_scene() -> PackedScene:
-	if not combat_room_scenes.is_empty():
-		var random_index: int = randi_range(0, combat_room_scenes.size() - 1)
-		return combat_room_scenes[random_index]
-
-	return combat_room_scene
 
 
 func debug_print_room_scene_mapping(map_data: Dictionary) -> void:

@@ -1,4 +1,4 @@
-[gd_scene format=4 uid="uid://cgigtht74ex30"]
+[gd_scene format=4 uid="uid://y7bl54ljio0o"]
 
 [ext_resource type="Script" uid="uid://vfl2byp8j7t5" path="res://scripts/dungeon/rooms/dungeon_room.gd" id="1_kg6fv"]
 [ext_resource type="PackedScene" uid="uid://d33x6vbucvpe5" path="res://scenes/enemies/enemy_grunt.tscn" id="2_4bh6l"]
@@ -120,7 +120,6 @@ sources/0 = SubResource("TileSetAtlasSource_0mblh")
 
 [node name="CombatRoom" type="Node2D" unique_id=573488946]
 script = ExtResource("1_kg6fv")
-room_size = Vector2(640, 384)
 draw_placeholder_background = false
 enemy_scene = ExtResource("2_4bh6l")
 enemy_scenes = Array[PackedScene]([ExtResource("2_4bh6l"), ExtResource("3_yirvs"), ExtResource("4_jqpt6")])

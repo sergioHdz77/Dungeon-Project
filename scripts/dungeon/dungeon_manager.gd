@@ -25,10 +25,6 @@ signal item_collected(item_id: String, display_name: String)
 @export var combat_room_scene: PackedScene
 @export var boss_room_scene: PackedScene
 
-# Variantes opcionales de salas de combate.
-# Si está vacío, usa combat_room_scene como fallback.
-@export var combat_room_scenes: Array[PackedScene] = []
-
 # Estos valores siguen existiendo para mantener coherencia con la generación actual.
 # Ahora el número real de salas viene de DungeonMapGenerator.
 @export var base_combat_rooms: int = 2
@@ -123,7 +119,7 @@ func load_room_by_id(room_id: String, entered_from_direction: String = "") -> vo
 	current_room.global_position = Vector2.ZERO
 
 	current_room_id = room_id
-
+	prepare_current_room_layout(room_data)	
 	mark_room_as_visited(room_id)
 	connect_current_room_signals()
 
@@ -195,7 +191,6 @@ func setup_room_scene_resolver() -> void:
 		start_room_scene,
 		combat_room_scene,
 		boss_room_scene,
-		combat_room_scenes
 	)
 
 func move_player_to_room_spawn(room: Node2D, entered_from_direction: String = "") -> void:
@@ -467,3 +462,20 @@ func _on_current_room_directional_exit_requested(direction: String) -> void:
 func _on_room_item_collected(item_id: String, display_name: String) -> void:
 	print("DungeonManager recibe loot: ", display_name)
 	item_collected.emit(item_id, display_name)
+
+func prepare_current_room_layout(room_data: Dictionary) -> void:
+	if current_room == null:
+		return
+
+	var procedural_builder := current_room.get_node_or_null("ProceduralRoomBuilder")
+
+	if procedural_builder == null:
+		return
+
+	if not procedural_builder.has_method("generate"):
+		push_warning(
+			"DungeonManager: ProceduralRoomBuilder existe pero no tiene generate()."
+		)
+		return
+
+	procedural_builder.generate(room_data, current_difficulty)
