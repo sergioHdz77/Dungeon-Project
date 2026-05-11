@@ -30,6 +30,25 @@ const INVALID_ENEMY_SPAWN := Vector2(999999.0, 999999.0)
 @export var floor_source_id: int = 0
 @export var floor_atlas_coords: Vector2i = Vector2i(0, 0)
 
+# Variantes visuales de suelo.
+@export var use_floor_variants: bool = true
+
+# Probabilidad de usar una variante en vez del suelo base.
+# 0.12 = 12% de tiles alternativos.
+@export_range(0.0, 1.0, 0.01) var floor_variant_chance: float = 0.12
+
+# Coordenadas de los tiles de suelo dentro del tilesheet.
+@export var floor_variant_atlas_coords: Array[Vector2i] = [
+	Vector2i(0, 6),
+	Vector2i(1, 6),
+	Vector2i(2, 6),
+	Vector2i(3, 6),
+	Vector2i(0, 7),
+	Vector2i(1, 7),
+	Vector2i(2, 7),
+	Vector2i(3, 7)
+]
+
 @export var wall_source_id: int = 0
 @export var wall_atlas_coords: Vector2i = Vector2i(1, 0)
 
@@ -118,7 +137,7 @@ func _create_tile_layers(room: Node2D) -> void:
 			ground_layer.set_cell(
 				Vector2i(x, y),
 				floor_source_id,
-				floor_atlas_coords,
+				_get_floor_tile_atlas_coords(),
 				0
 			)
 
@@ -152,7 +171,20 @@ func _create_tile_layers(room: Node2D) -> void:
 			0
 		)
 
+func _get_resolved_tile_set(room: Node2D) -> TileSet:
+	if tile_set != null:
+		return tile_set
 
+	var existing_ground_layer := room.get_node_or_null("GroundLayer") as TileMapLayer
+	if existing_ground_layer != null and existing_ground_layer.tile_set != null:
+		return existing_ground_layer.tile_set
+
+	var existing_wall_layer := room.get_node_or_null("WallLayer") as TileMapLayer
+	if existing_wall_layer != null and existing_wall_layer.tile_set != null:
+		return existing_wall_layer.tile_set
+
+	return null
+	
 func _get_or_create_tile_layer(
 	room: Node2D,
 	layer_name: String,
@@ -444,3 +476,17 @@ func _get_door_positions() -> Array[Vector2]:
 func _clear_children_immediate(node: Node) -> void:
 	for child in node.get_children():
 		child.free()
+
+func _get_floor_tile_atlas_coords() -> Vector2i:
+	if not use_floor_variants:
+		return floor_atlas_coords
+
+	if floor_variant_atlas_coords.is_empty():
+		return floor_atlas_coords
+
+	# La mayoría del suelo sigue usando el tile base.
+	if rng.randf() > floor_variant_chance:
+		return floor_atlas_coords
+
+	var random_index := rng.randi_range(0, floor_variant_atlas_coords.size() - 1)
+	return floor_variant_atlas_coords[random_index]
