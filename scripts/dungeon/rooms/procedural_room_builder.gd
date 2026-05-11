@@ -50,7 +50,18 @@ const INVALID_ENEMY_SPAWN := Vector2(999999.0, 999999.0)
 ]
 
 @export var wall_source_id: int = 0
-@export var wall_atlas_coords: Vector2i = Vector2i(1, 0)
+
+# Tile para la pared norte / superior.
+@export var wall_top_atlas_coords: Vector2i = Vector2i(0, 0)
+
+# Tile para la pared sur / inferior.
+@export var wall_bottom_atlas_coords: Vector2i = Vector2i(1, 0)
+
+# Tile para la pared izquierda.
+@export var wall_left_atlas_coords: Vector2i = Vector2i(2, 0)
+
+# Tile para la pared derecha.
+@export var wall_right_atlas_coords: Vector2i = Vector2i(3, 0)
 
 @export var door_size: Vector2 = Vector2(80, 36)
 
@@ -141,33 +152,39 @@ func _create_tile_layers(room: Node2D) -> void:
 				0
 			)
 
+	# Pared superior / norte.
 	for x in range(start_x, end_x + 1):
 		wall_layer.set_cell(
 			Vector2i(x, start_y),
 			wall_source_id,
-			wall_atlas_coords,
+			wall_top_atlas_coords,
 			0
 		)
 
+	# Pared inferior / sur.
+	for x in range(start_x, end_x + 1):
 		wall_layer.set_cell(
 			Vector2i(x, end_y),
 			wall_source_id,
-			wall_atlas_coords,
+			wall_bottom_atlas_coords,
 			0
 		)
 
+	# Pared izquierda.
 	for y in range(start_y, end_y + 1):
 		wall_layer.set_cell(
 			Vector2i(start_x, y),
 			wall_source_id,
-			wall_atlas_coords,
+			wall_left_atlas_coords,
 			0
 		)
 
+	# Pared derecha.
+	for y in range(start_y, end_y + 1):
 		wall_layer.set_cell(
 			Vector2i(end_x, y),
 			wall_source_id,
-			wall_atlas_coords,
+			wall_right_atlas_coords,
 			0
 		)
 
