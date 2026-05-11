@@ -5,6 +5,22 @@ extends Node
 
 @export var hurt_animation_duration: float = 0.15
 
+# -------------------------------------------------------------------
+# FEEDBACK VISUAL DE DAÑO / INVULNERABILIDAD
+# -------------------------------------------------------------------
+
+@export var damage_flash_duration: float = 0.08
+@export var invulnerability_blink_interval: float = 0.08
+
+@export var normal_modulate: Color = Color(1, 1, 1, 1)
+@export var damage_flash_modulate: Color = Color(1, 0.25, 0.25, 1)
+@export var invulnerability_blink_modulate: Color = Color(1, 1, 1, 0.35)
+
+var damage_flash_timer: float = 0.0
+var invulnerability_feedback_active: bool = false
+var blink_timer: float = 0.0
+var blink_visible: bool = true
+
 var player: CharacterBody2D = null
 var equipment: Node = null
 
@@ -40,7 +56,8 @@ func process_visuals(delta: float) -> void:
 	_update_visual_direction_from_velocity()
 	_update_movement_animation()
 	update_equipment_idle_pose()
-
+	_process_damage_feedback(delta)
+	
 func play_attack(attack_direction: Vector2) -> void:
 	_set_visual_direction_from_vector(attack_direction)
 
@@ -56,10 +73,12 @@ func play_attack(attack_direction: Vector2) -> void:
 			equipment_visuals.play_weapon_attack(attack_direction)
 
 func play_hurt() -> void:
+	start_damage_feedback()
 	play_animation("hurt", hurt_animation_duration)
 
 
 func play_death() -> void:
+	reset_damage_feedback()
 	play_animation("death", 999.0)
 
 
@@ -234,3 +253,68 @@ func _set_visual_direction_from_vector(direction: Vector2) -> void:
 			visual_facing_direction = Vector2.DOWN
 
 		animated_sprite.flip_h = false
+		
+func start_damage_feedback() -> void:
+	damage_flash_timer = damage_flash_duration
+	_apply_visual_modulate(damage_flash_modulate)
+
+
+func set_invulnerability_feedback(active: bool) -> void:
+	if invulnerability_feedback_active == active:
+		return
+
+	invulnerability_feedback_active = active
+	blink_timer = 0.0
+	blink_visible = true
+
+	if not invulnerability_feedback_active and damage_flash_timer <= 0.0:
+		_apply_visual_modulate(normal_modulate)
+
+
+func _process_damage_feedback(delta: float) -> void:
+	if damage_flash_timer > 0.0:
+		damage_flash_timer -= delta
+
+		if damage_flash_timer > 0.0:
+			_apply_visual_modulate(damage_flash_modulate)
+			return
+
+		damage_flash_timer = 0.0
+
+	if invulnerability_feedback_active:
+		_process_invulnerability_blink(delta)
+		return
+
+	_apply_visual_modulate(normal_modulate)
+
+
+func _process_invulnerability_blink(delta: float) -> void:
+	blink_timer -= delta
+
+	if blink_timer > 0.0:
+		return
+
+	blink_timer = invulnerability_blink_interval
+	blink_visible = not blink_visible
+
+	if blink_visible:
+		_apply_visual_modulate(normal_modulate)
+	else:
+		_apply_visual_modulate(invulnerability_blink_modulate)
+
+
+func _apply_visual_modulate(color: Color) -> void:
+	if visuals != null:
+		visuals.modulate = color
+
+	if equipment_visuals != null and equipment_visuals is CanvasItem:
+		var equipment_canvas := equipment_visuals as CanvasItem
+		equipment_canvas.modulate = color
+
+
+func reset_damage_feedback() -> void:
+	damage_flash_timer = 0.0
+	invulnerability_feedback_active = false
+	blink_timer = 0.0
+	blink_visible = true
+	_apply_visual_modulate(normal_modulate)

@@ -178,13 +178,16 @@ func take_damage(amount: float, damage_source: Node2D = null) -> void:
 	_start_invulnerability()
 	_apply_damage_knockback(damage_source)
 
-	if visual_controller != null and visual_controller.has_method("play_hurt"):
-		visual_controller.play_hurt()
-
+	if visual_controller != null:
+		if visual_controller.has_method("play_hurt"):
+			visual_controller.play_hurt()
+		elif visual_controller.has_method("start_damage_feedback"):
+			visual_controller.start_damage_feedback()
+		stats_changed.emit()
+		
 	if progression != null and progression.has_method("take_damage"):
 		progression.take_damage(final_damage)
 
-	stats_changed.emit()
 
 func _start_invulnerability() -> void:
 	invulnerability_timer = invulnerability_duration
@@ -192,6 +195,7 @@ func _start_invulnerability() -> void:
 
 func _update_invulnerability(delta: float) -> void:
 	if invulnerability_timer <= 0.0:
+		_update_invulnerability_visual_feedback()
 		return
 
 	invulnerability_timer -= delta
@@ -199,7 +203,17 @@ func _update_invulnerability(delta: float) -> void:
 	if invulnerability_timer < 0.0:
 		invulnerability_timer = 0.0
 
+	_update_invulnerability_visual_feedback()
 
+func _update_invulnerability_visual_feedback() -> void:
+	if visual_controller == null:
+		return
+
+	if not visual_controller.has_method("set_invulnerability_feedback"):
+		return
+
+	visual_controller.set_invulnerability_feedback(_is_invulnerable())
+	
 func _is_invulnerable() -> bool:
 	return invulnerability_timer > 0.0
 
