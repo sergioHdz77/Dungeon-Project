@@ -10,6 +10,11 @@ extends CharacterBody2D
 signal stats_changed
 signal player_died
 
+@export var invulnerability_duration: float = 0.45
+@export var damage_knockback_force: float = 260.0
+
+var invulnerability_timer: float = 0.0
+
 @onready var economy: Node = get_node_or_null("Economy")
 @onready var combat: Node = get_node_or_null("Combat")
 @onready var progression: Node = get_node_or_null("Progression")
@@ -54,8 +59,11 @@ func connect_equipment_visual_signals() -> void:
 			equipment.armor_unequipped.connect(visual_controller._on_armor_unequipped)
 
 func _physics_process(delta: float) -> void:
+	
 	if progression != null and "is_dead" in progression and progression.is_dead:
 		return
+		
+	_update_invulnerability(delta)
 
 	var input_dir: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
@@ -153,6 +161,9 @@ func register_kill() -> void:
 
 
 func take_damage(amount: float, damage_source: Node2D = null) -> void:
+	if _is_invulnerable():
+		return
+
 	var final_damage: float = amount
 
 	if combat != null and combat.has_method("get_modified_incoming_damage"):
@@ -164,12 +175,54 @@ func take_damage(amount: float, damage_source: Node2D = null) -> void:
 	if final_damage <= 0.0:
 		return
 
+	_start_invulnerability()
+	_apply_damage_knockback(damage_source)
+
 	if visual_controller != null and visual_controller.has_method("play_hurt"):
 		visual_controller.play_hurt()
 
 	if progression != null and progression.has_method("take_damage"):
 		progression.take_damage(final_damage)
 
+	stats_changed.emit()
+
+func _start_invulnerability() -> void:
+	invulnerability_timer = invulnerability_duration
+
+
+func _update_invulnerability(delta: float) -> void:
+	if invulnerability_timer <= 0.0:
+		return
+
+	invulnerability_timer -= delta
+
+	if invulnerability_timer < 0.0:
+		invulnerability_timer = 0.0
+
+
+func _is_invulnerable() -> bool:
+	return invulnerability_timer > 0.0
+
+
+func _apply_damage_knockback(damage_source: Node2D) -> void:
+	if damage_source == null:
+		return
+
+	if movement == null:
+		return
+
+	if not movement.has_method("apply_knockback"):
+		return
+
+	var knockback_direction: Vector2 = global_position - damage_source.global_position
+
+	if knockback_direction.length() <= 0.01:
+		knockback_direction = Vector2.DOWN
+
+	movement.apply_knockback(
+		knockback_direction.normalized(),
+		damage_knockback_force
+	)
 
 func die() -> void:
 	if progression != null and progression.has_method("die"):
