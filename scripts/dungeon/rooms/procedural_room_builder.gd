@@ -63,6 +63,12 @@ const INVALID_ENEMY_SPAWN := Vector2(999999.0, 999999.0)
 # Tile para la pared derecha.
 @export var wall_right_atlas_coords: Vector2i = Vector2i(3, 0)
 
+# Esquinas.
+@export var wall_top_left_corner_atlas_coords: Vector2i = Vector2i(4, 0)
+@export var wall_top_right_corner_atlas_coords: Vector2i = Vector2i(5, 0)
+@export var wall_bottom_left_corner_atlas_coords: Vector2i = Vector2i(6, 0)
+@export var wall_bottom_right_corner_atlas_coords: Vector2i = Vector2i(7, 0)
+
 @export var door_size: Vector2 = Vector2(80, 36)
 
 @export var default_player_spawn: Vector2 = Vector2(0, 120)
@@ -187,6 +193,38 @@ func _create_tile_layers(room: Node2D) -> void:
 			wall_right_atlas_coords,
 			0
 		)
+
+	# Esquina superior izquierda.
+	wall_layer.set_cell(
+		Vector2i(start_x, start_y),
+		wall_source_id,
+		wall_top_left_corner_atlas_coords,
+		0
+	)
+
+	# Esquina superior derecha.
+	wall_layer.set_cell(
+		Vector2i(end_x, start_y),
+		wall_source_id,
+		wall_top_right_corner_atlas_coords,
+		0
+	)
+
+	# Esquina inferior izquierda.
+	wall_layer.set_cell(
+		Vector2i(start_x, end_y),
+		wall_source_id,
+		wall_bottom_left_corner_atlas_coords,
+		0
+	)
+
+	# Esquina inferior derecha.
+	wall_layer.set_cell(
+		Vector2i(end_x, end_y),
+		wall_source_id,
+		wall_bottom_right_corner_atlas_coords,
+		0
+	)
 
 func _get_resolved_tile_set(room: Node2D) -> TileSet:
 	if tile_set != null:
