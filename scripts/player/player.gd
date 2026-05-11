@@ -12,6 +12,7 @@ signal player_died
 
 @export var invulnerability_duration: float = 0.45
 @export var damage_knockback_force: float = 260.0
+@export var blocked_hit_knockback_force: float = 120.0
 
 var invulnerability_timer: float = 0.0
 
@@ -172,21 +173,26 @@ func take_damage(amount: float, damage_source: Node2D = null) -> void:
 	if equipment != null and equipment.has_method("modify_incoming_damage"):
 		final_damage = equipment.modify_incoming_damage(final_damage)
 
+	# Si el daño se ha reducido a 0, asumimos que ha sido bloqueado o anulado.
+	# No aplicamos daño ni hurt, pero sí un pequeño empuje físico.
 	if final_damage <= 0.0:
+		_apply_damage_knockback(damage_source, blocked_hit_knockback_force)
+		stats_changed.emit()
 		return
 
 	_start_invulnerability()
-	_apply_damage_knockback(damage_source)
+	_apply_damage_knockback(damage_source, damage_knockback_force)
 
 	if visual_controller != null:
 		if visual_controller.has_method("play_hurt"):
 			visual_controller.play_hurt()
 		elif visual_controller.has_method("start_damage_feedback"):
 			visual_controller.start_damage_feedback()
-		stats_changed.emit()
-		
+
 	if progression != null and progression.has_method("take_damage"):
 		progression.take_damage(final_damage)
+
+	stats_changed.emit()
 
 
 func _start_invulnerability() -> void:
@@ -218,7 +224,7 @@ func _is_invulnerable() -> bool:
 	return invulnerability_timer > 0.0
 
 
-func _apply_damage_knockback(damage_source: Node2D) -> void:
+func _apply_damage_knockback(damage_source: Node2D, force: float) -> void:
 	if damage_source == null:
 		return
 
@@ -235,7 +241,7 @@ func _apply_damage_knockback(damage_source: Node2D) -> void:
 
 	movement.apply_knockback(
 		knockback_direction.normalized(),
-		damage_knockback_force
+		force
 	)
 
 func die() -> void:

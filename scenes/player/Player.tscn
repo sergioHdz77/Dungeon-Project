@@ -566,6 +566,7 @@ melee_arc_degrees = 90.0
 
 [node name="Block" type="Node" parent="Combat" unique_id=1447500424]
 script = ExtResource("12_ejd4k")
+block_damage_multiplier = 0.0
 
 [node name="Progression" type="Node" parent="." unique_id=99627898]
 script = ExtResource("4_524rm")
