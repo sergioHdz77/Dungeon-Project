@@ -573,6 +573,7 @@ max_health = 9999.0
 
 [node name="Movement" type="Node" parent="." unique_id=1962336015]
 script = ExtResource("11_ov1oi")
+speed = 150.0
 
 [node name="Equipment" type="Node" parent="." unique_id=1309729321]
 script = ExtResource("12_rn7t0")
