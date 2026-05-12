@@ -163,12 +163,8 @@ script = ExtResource("5_uc64q")
 drops_loot_on_clear = true
 loot_item_scene = ExtResource("3_jyohm")
 
-[node name="EnemySpawnPoints" type="Node2D" parent="." unique_id=1048983806]
-position = Vector2(0, -100)
-
-[node name="EnemySpawnPoint1" type="Marker2D" parent="EnemySpawnPoints" unique_id=1388615603]
-
 [node name="BasicBoss" parent="." unique_id=2133845402 instance=ExtResource("8_dauyb")]
+z_index = 10
 
 [node name="Doors" type="Node2D" parent="." unique_id=654866352]
 

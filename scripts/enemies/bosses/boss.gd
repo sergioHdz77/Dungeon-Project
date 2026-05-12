@@ -52,8 +52,14 @@ func _ready() -> void:
 	add_to_group("enemies")
 	_cache_visual_nodes()
 
+	z_index = 20
+	visible = true
+	use_placeholder_drawing = true
+
 	if health <= 0.0:
 		health = max_health
+
+	print("BOSS READY: ", name, " pos=", global_position, " parent=", get_parent())
 
 	play_animation("idle")
 	queue_redraw()
@@ -228,18 +234,8 @@ func _update_hit_flash(delta: float) -> void:
 			animated_sprite.modulate = Color.WHITE
 
 
-func has_animated_visuals() -> bool:
-	if animated_sprite == null:
-		return false
-
-	if animated_sprite.sprite_frames == null:
-		return false
-
-	return true
-
-
 func _draw() -> void:
-	if has_animated_visuals() and not use_placeholder_drawing:
+	if not use_placeholder_drawing:
 		return
 
 	_draw_body()
