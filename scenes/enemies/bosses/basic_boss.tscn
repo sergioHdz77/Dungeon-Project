@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://bofckie868d3j"]
+
+[ext_resource type="Script" uid="uid://dqj3o17hvl843" path="res://scripts/enemies/bosses/boss.gd" id="1_eckcu"]
+[ext_resource type="Script" uid="uid://dyyx3wn6ss0dw" path="res://scripts/enemies/bosses/boss_movement.gd" id="2_pwt62"]
+[ext_resource type="Script" uid="uid://c5ew5sdmnt4an" path="res://scripts/enemies/bosses/boss_attack.gd" id="3_qnf7a"]
+[ext_resource type="Script" uid="uid://y76pfrtjnwmi" path="res://scripts/enemies/enemy_loot_drop.gd" id="4_pwt62"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pwt62"]
+radius = 28.0
+
+[node name="BasicBoss" type="CharacterBody2D" unique_id=2133845402]
+script = ExtResource("1_eckcu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=319631817]
+shape = SubResource("CircleShape2D_pwt62")
+
+[node name="Visuals" type="Node2D" parent="." unique_id=1073923262]
+z_index = 10
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visuals" unique_id=157859151]
+z_index = 10
+
+[node name="Movement" type="Node" parent="." unique_id=1450649408]
+script = ExtResource("2_pwt62")
+
+[node name="Attack" type="Node" parent="." unique_id=105241401]
+script = ExtResource("3_qnf7a")
+
+[node name="LootDrop" type="Node" parent="." unique_id=1489512242]
+script = ExtResource("4_pwt62")
